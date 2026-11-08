@@ -11,7 +11,12 @@
 // the first pointer/key event (or when the user turns sound on). Until then every
 // call is a silent no-op. Preference is remembered in localStorage ('tada.sound').
 //
-// Exposes window.TadaSound = { enabled(), setEnabled(v), toggle(), unlock(), sfx, bind() }.
+// Some browsers let a site sound before any gesture (the visitor allowed it, or has
+// played here before): probe() asks quietly, and the entrance plays from the start
+// when the answer is yes. iOS only opens audio inside touchend or click, so those
+// unlock too.
+//
+// Exposes window.TadaSound = { enabled(), setEnabled(v), toggle(), unlock(), probe(), sfx, bind() }.
 
 (function () {
   'use strict';
@@ -133,6 +138,17 @@
     tada() { arp([0, 4, 7, 12], { gap: 0.07, gain: 0.035 }); sparkles(0.25, 4); },
     tile(i) { if (every('tile', 40)) tone(note(PENTA[i % 5] + 12 * Math.floor(i / 5)), 0.3, { gain: 0.026, reverb: true }); },
     bubble() { if (every('bubble', 60)) tone(600 + Math.random() * 300, 0.07, { gain: 0.022, slideTo: 1100 + Math.random() * 300 }); },
+    // The entrance: a soft note for each stretch of the filling light, then the door opens
+    gateNote(i) {
+      tone(note(PENTA[i % 5]), 1.1, { gain: 0.018, attack: 0.05, reverb: true });
+      tone(note(PENTA[i % 5] + 12), 0.8, { gain: 0.006, attack: 0.08, delay: 0.04, reverb: true });
+      sparkles(0.08, 1, 0.005);
+    },
+    gateOpen() {
+      air(1.3, { gain: 0.028, from: 500, to: 4200, reverb: true });
+      arp([0, 7, 12, 19], { gap: 0.12, gain: 0.026, type: 'sine' });
+      sparkles(0.45, 4, 0.007);
+    },
   };
 
   function setEnabled(v) {
@@ -142,6 +158,16 @@
     listeners.forEach(fn => fn(wanted));
   }
   const unlock = () => { gestured = true; if (wanted) engine(); };
+  // Ask, without a gesture, whether this browser already lets the site sound.
+  function probe() {
+    if (!wanted || typeof AudioContext === 'undefined') return Promise.resolve(false);
+    if (matchMedia('(pointer: coarse)').matches && !gestured) return Promise.resolve(false);   // phones and tablets never allow it
+    if (gestured && ctx && ctx.state === 'running') return Promise.resolve(true);
+    const was = gestured; gestured = true;
+    const c = engine(); gestured = was;
+    if (!c) return Promise.resolve(false);
+    return new Promise(r => setTimeout(() => { const ok = c.state === 'running'; if (ok) gestured = true; r(ok); }, 90));
+  }
 
   // Global bindings: hover/tap on interactive elements, like the reference.
   const SEL = 'button, a[href], [role="button"], summary';
@@ -165,7 +191,9 @@
       (t.closest('.nav-links') ? sfx.nav : sfx.tap)();
     }, { passive: true });
     document.addEventListener('keydown', unlock, { passive: true, once: true });
+    document.addEventListener('touchend', unlock, { passive: true });   // iOS opens audio here
+    document.addEventListener('click', unlock, { passive: true });
   }
 
-  window.TadaSound = { enabled: () => wanted, setEnabled, toggle: () => setEnabled(!wanted), unlock, sfx, bind, onChange: fn => listeners.add(fn) };
+  window.TadaSound = { enabled: () => wanted, setEnabled, toggle: () => setEnabled(!wanted), unlock, probe, sfx, bind, onChange: fn => listeners.add(fn) };
 })();

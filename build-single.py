@@ -45,6 +45,7 @@ def safe_js(js: str) -> str:
 
 def main():
     html = (ROOT / "index.html").read_text(encoding="utf-8")
+    html = re.sub(r'\?v=[\w.-]+"', '"', html)   # drop cache-busting stamps (see stamp.py)
 
     # stylesheets
     for name in ("site", "loader"):

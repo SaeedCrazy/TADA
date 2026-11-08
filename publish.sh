@@ -9,6 +9,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+python stamp.py
 python build-single.py
 
 if [ ! -d .git ]; then

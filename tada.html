@@ -412,19 +412,19 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
    page-wide grid, so the pattern runs on across section edges as a single piece. The
    halo under the mouse is one shape in screen space, drawn into each section it touches. */
 .bg-field { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; }
-.bg-sheet, .bg-aura { position: absolute; left: 0; right: 0; top: -72px; bottom: 0; will-change: transform;
-  background: url("data:image/svg+xml;charset=utf-8,%3C%3Fxml version=%221.0%22 encoding=%22UTF-8%22%3F%3E%0D%0A%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100.00 100.00%22 width=%22100%22 height=%22100%22%3E%3Ctitle%3ETADA pattern tile (seamless)%3C/title%3E%0D%0A%3Cpath fill=%22%23662482%22 fill-rule=%22evenodd%22 d=%22M0 34.77L0 65.23Q3.57 77.29 13.14 86.86Q22.71 96.43 34.77 100L65.23 100Q77.29 96.43 86.86 86.86Q96.43 77.29 100 65.23L100 34.77Q96.43 22.71 86.86 13.14Q77.29 3.57 65.23 0L34.77 0Q22.71 3.57 13.14 13.14Q3.57 22.71 0 34.77ZM16.15 16.15Q29.4 2.9 47.83 2.17Q47.1 20.6 33.85 33.85Q20.6 47.1 2.17 47.83Q2.9 29.4 16.15 16.15ZM66.15 33.85Q52.9 20.6 52.17 2.17Q70.6 2.9 83.85 16.15Q97.1 29.4 97.83 47.83Q79.4 47.1 66.15 33.85ZM36.86 36.86Q46.43 27.29 50 15.23Q53.57 27.29 63.14 36.86Q72.71 46.43 84.77 50Q72.71 53.57 63.14 63.14Q53.57 72.71 50 84.77Q46.43 72.71 36.86 63.14Q27.29 53.57 15.23 50Q27.29 46.43 36.86 36.86ZM16.15 83.85Q29.4 97.1 47.83 97.83Q47.1 79.4 33.85 66.15Q20.6 52.9 2.17 52.17Q2.9 70.6 16.15 83.85ZM66.15 66.15Q79.4 52.9 97.83 52.17Q97.1 70.6 83.85 83.85Q70.6 97.1 52.17 97.83Q52.9 79.4 66.15 66.15Z%22/%3E%0D%0A%3C/svg%3E%0D%0A") 0 0 / 72px 72px repeat; }
+.bg-sheet, .bg-aura { position: absolute; left: 0; right: 0; top: calc(-1 * var(--tile, 72px)); bottom: 0; will-change: transform;
+  background: url("data:image/svg+xml;charset=utf-8,%3C%3Fxml version=%221.0%22 encoding=%22UTF-8%22%3F%3E%0D%0A%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100.00 100.00%22 width=%22100%22 height=%22100%22%3E%3Ctitle%3ETADA pattern tile (seamless)%3C/title%3E%0D%0A%3Cpath fill=%22%23662482%22 fill-rule=%22evenodd%22 d=%22M0 34.77L0 65.23Q3.57 77.29 13.14 86.86Q22.71 96.43 34.77 100L65.23 100Q77.29 96.43 86.86 86.86Q96.43 77.29 100 65.23L100 34.77Q96.43 22.71 86.86 13.14Q77.29 3.57 65.23 0L34.77 0Q22.71 3.57 13.14 13.14Q3.57 22.71 0 34.77ZM16.15 16.15Q29.4 2.9 47.83 2.17Q47.1 20.6 33.85 33.85Q20.6 47.1 2.17 47.83Q2.9 29.4 16.15 16.15ZM66.15 33.85Q52.9 20.6 52.17 2.17Q70.6 2.9 83.85 16.15Q97.1 29.4 97.83 47.83Q79.4 47.1 66.15 33.85ZM36.86 36.86Q46.43 27.29 50 15.23Q53.57 27.29 63.14 36.86Q72.71 46.43 84.77 50Q72.71 53.57 63.14 63.14Q53.57 72.71 50 84.77Q46.43 72.71 36.86 63.14Q27.29 53.57 15.23 50Q27.29 46.43 36.86 36.86ZM16.15 83.85Q29.4 97.1 47.83 97.83Q47.1 79.4 33.85 66.15Q20.6 52.9 2.17 52.17Q2.9 70.6 16.15 83.85ZM66.15 66.15Q79.4 52.9 97.83 52.17Q97.1 70.6 83.85 83.85Q70.6 97.1 52.17 97.83Q52.9 79.4 66.15 66.15Z%22/%3E%0D%0A%3C/svg%3E%0D%0A") 0 0 / var(--tile, 72px) var(--tile, 72px) repeat; }
 .bg-sheet { opacity: .034; }
 .hero .bg-sheet { background-image: url("data:image/svg+xml;charset=utf-8,%3C%3Fxml version=%221.0%22 encoding=%22UTF-8%22%3F%3E%0D%0A%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100.00 100.00%22 width=%22100%22 height=%22100%22%3E%3Ctitle%3ETADA pattern tile (seamless)%3C/title%3E%0D%0A%3Cpath fill=%22%23FFFFFF%22 fill-rule=%22evenodd%22 d=%22M0 34.77L0 65.23Q3.57 77.29 13.14 86.86Q22.71 96.43 34.77 100L65.23 100Q77.29 96.43 86.86 86.86Q96.43 77.29 100 65.23L100 34.77Q96.43 22.71 86.86 13.14Q77.29 3.57 65.23 0L34.77 0Q22.71 3.57 13.14 13.14Q3.57 22.71 0 34.77ZM16.15 16.15Q29.4 2.9 47.83 2.17Q47.1 20.6 33.85 33.85Q20.6 47.1 2.17 47.83Q2.9 29.4 16.15 16.15ZM66.15 33.85Q52.9 20.6 52.17 2.17Q70.6 2.9 83.85 16.15Q97.1 29.4 97.83 47.83Q79.4 47.1 66.15 33.85ZM36.86 36.86Q46.43 27.29 50 15.23Q53.57 27.29 63.14 36.86Q72.71 46.43 84.77 50Q72.71 53.57 63.14 63.14Q53.57 72.71 50 84.77Q46.43 72.71 36.86 63.14Q27.29 53.57 15.23 50Q27.29 46.43 36.86 36.86ZM16.15 83.85Q29.4 97.1 47.83 97.83Q47.1 79.4 33.85 66.15Q20.6 52.9 2.17 52.17Q2.9 70.6 16.15 83.85ZM66.15 66.15Q79.4 52.9 97.83 52.17Q97.1 70.6 83.85 83.85Q70.6 97.1 52.17 97.83Q52.9 79.4 66.15 66.15Z%22/%3E%0D%0A%3C/svg%3E%0D%0A"); opacity: .028; }
 .bg-aura { opacity: 0;
-  background: radial-gradient(240px circle at var(--ax, -999px) var(--ay, -999px), rgba(146, 109, 143, .22), rgba(146, 109, 143, 0) 70%),
-              url("data:image/svg+xml;charset=utf-8,%3C%3Fxml version=%221.0%22 encoding=%22UTF-8%22%3F%3E%0D%0A%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100.00 100.00%22 width=%22100%22 height=%22100%22%3E%3Ctitle%3ETADA pattern tile (seamless)%3C/title%3E%0D%0A%3Cpath fill=%22%23662482%22 fill-rule=%22evenodd%22 d=%22M0 34.77L0 65.23Q3.57 77.29 13.14 86.86Q22.71 96.43 34.77 100L65.23 100Q77.29 96.43 86.86 86.86Q96.43 77.29 100 65.23L100 34.77Q96.43 22.71 86.86 13.14Q77.29 3.57 65.23 0L34.77 0Q22.71 3.57 13.14 13.14Q3.57 22.71 0 34.77ZM16.15 16.15Q29.4 2.9 47.83 2.17Q47.1 20.6 33.85 33.85Q20.6 47.1 2.17 47.83Q2.9 29.4 16.15 16.15ZM66.15 33.85Q52.9 20.6 52.17 2.17Q70.6 2.9 83.85 16.15Q97.1 29.4 97.83 47.83Q79.4 47.1 66.15 33.85ZM36.86 36.86Q46.43 27.29 50 15.23Q53.57 27.29 63.14 36.86Q72.71 46.43 84.77 50Q72.71 53.57 63.14 63.14Q53.57 72.71 50 84.77Q46.43 72.71 36.86 63.14Q27.29 53.57 15.23 50Q27.29 46.43 36.86 36.86ZM16.15 83.85Q29.4 97.1 47.83 97.83Q47.1 79.4 33.85 66.15Q20.6 52.9 2.17 52.17Q2.9 70.6 16.15 83.85ZM66.15 66.15Q79.4 52.9 97.83 52.17Q97.1 70.6 83.85 83.85Q70.6 97.1 52.17 97.83Q52.9 79.4 66.15 66.15Z%22/%3E%0D%0A%3C/svg%3E%0D%0A") 0 0 / 72px 72px repeat;
+  background: radial-gradient(240px circle at var(--ax, -999px) var(--ay, -999px), rgba(146, 109, 143, .1), rgba(146, 109, 143, 0) 70%),
+              url("data:image/svg+xml;charset=utf-8,%3C%3Fxml version=%221.0%22 encoding=%22UTF-8%22%3F%3E%0D%0A%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100.00 100.00%22 width=%22100%22 height=%22100%22%3E%3Ctitle%3ETADA pattern tile (seamless)%3C/title%3E%0D%0A%3Cpath fill=%22%23662482%22 fill-rule=%22evenodd%22 d=%22M0 34.77L0 65.23Q3.57 77.29 13.14 86.86Q22.71 96.43 34.77 100L65.23 100Q77.29 96.43 86.86 86.86Q96.43 77.29 100 65.23L100 34.77Q96.43 22.71 86.86 13.14Q77.29 3.57 65.23 0L34.77 0Q22.71 3.57 13.14 13.14Q3.57 22.71 0 34.77ZM16.15 16.15Q29.4 2.9 47.83 2.17Q47.1 20.6 33.85 33.85Q20.6 47.1 2.17 47.83Q2.9 29.4 16.15 16.15ZM66.15 33.85Q52.9 20.6 52.17 2.17Q70.6 2.9 83.85 16.15Q97.1 29.4 97.83 47.83Q79.4 47.1 66.15 33.85ZM36.86 36.86Q46.43 27.29 50 15.23Q53.57 27.29 63.14 36.86Q72.71 46.43 84.77 50Q72.71 53.57 63.14 63.14Q53.57 72.71 50 84.77Q46.43 72.71 36.86 63.14Q27.29 53.57 15.23 50Q27.29 46.43 36.86 36.86ZM16.15 83.85Q29.4 97.1 47.83 97.83Q47.1 79.4 33.85 66.15Q20.6 52.9 2.17 52.17Q2.9 70.6 16.15 83.85ZM66.15 66.15Q79.4 52.9 97.83 52.17Q97.1 70.6 83.85 83.85Q70.6 97.1 52.17 97.83Q52.9 79.4 66.15 66.15Z%22/%3E%0D%0A%3C/svg%3E%0D%0A") var(--fx, 0) 0 / var(--tile, 72px) var(--tile, 72px) repeat;
   -webkit-mask-image: radial-gradient(170px circle at var(--ax, -999px) var(--ay, -999px), #000 0%, rgba(0, 0, 0, .55) 50%, transparent 100%),
                       radial-gradient(320px circle at var(--bx, -999px) var(--by, -999px), rgba(0, 0, 0, .42) 0%, transparent 100%);
           mask-image: radial-gradient(170px circle at var(--ax, -999px) var(--ay, -999px), #000 0%, rgba(0, 0, 0, .55) 50%, transparent 100%),
                       radial-gradient(320px circle at var(--bx, -999px) var(--by, -999px), rgba(0, 0, 0, .42) 0%, transparent 100%); }
-.hero .bg-aura { background: radial-gradient(240px circle at var(--ax, -999px) var(--ay, -999px), rgba(201, 179, 207, .2), rgba(201, 179, 207, 0) 70%),
-                             url("data:image/svg+xml;charset=utf-8,%3C%3Fxml version=%221.0%22 encoding=%22UTF-8%22%3F%3E%0D%0A%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100.00 100.00%22 width=%22100%22 height=%22100%22%3E%3Ctitle%3ETADA pattern tile (seamless)%3C/title%3E%0D%0A%3Cpath fill=%22%23FFFFFF%22 fill-rule=%22evenodd%22 d=%22M0 34.77L0 65.23Q3.57 77.29 13.14 86.86Q22.71 96.43 34.77 100L65.23 100Q77.29 96.43 86.86 86.86Q96.43 77.29 100 65.23L100 34.77Q96.43 22.71 86.86 13.14Q77.29 3.57 65.23 0L34.77 0Q22.71 3.57 13.14 13.14Q3.57 22.71 0 34.77ZM16.15 16.15Q29.4 2.9 47.83 2.17Q47.1 20.6 33.85 33.85Q20.6 47.1 2.17 47.83Q2.9 29.4 16.15 16.15ZM66.15 33.85Q52.9 20.6 52.17 2.17Q70.6 2.9 83.85 16.15Q97.1 29.4 97.83 47.83Q79.4 47.1 66.15 33.85ZM36.86 36.86Q46.43 27.29 50 15.23Q53.57 27.29 63.14 36.86Q72.71 46.43 84.77 50Q72.71 53.57 63.14 63.14Q53.57 72.71 50 84.77Q46.43 72.71 36.86 63.14Q27.29 53.57 15.23 50Q27.29 46.43 36.86 36.86ZM16.15 83.85Q29.4 97.1 47.83 97.83Q47.1 79.4 33.85 66.15Q20.6 52.9 2.17 52.17Q2.9 70.6 16.15 83.85ZM66.15 66.15Q79.4 52.9 97.83 52.17Q97.1 70.6 83.85 83.85Q70.6 97.1 52.17 97.83Q52.9 79.4 66.15 66.15Z%22/%3E%0D%0A%3C/svg%3E%0D%0A") 0 0 / 72px 72px repeat; }
+.hero .bg-aura { background: radial-gradient(240px circle at var(--ax, -999px) var(--ay, -999px), rgba(201, 179, 207, .1), rgba(201, 179, 207, 0) 70%),
+                             url("data:image/svg+xml;charset=utf-8,%3C%3Fxml version=%221.0%22 encoding=%22UTF-8%22%3F%3E%0D%0A%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100.00 100.00%22 width=%22100%22 height=%22100%22%3E%3Ctitle%3ETADA pattern tile (seamless)%3C/title%3E%0D%0A%3Cpath fill=%22%23FFFFFF%22 fill-rule=%22evenodd%22 d=%22M0 34.77L0 65.23Q3.57 77.29 13.14 86.86Q22.71 96.43 34.77 100L65.23 100Q77.29 96.43 86.86 86.86Q96.43 77.29 100 65.23L100 34.77Q96.43 22.71 86.86 13.14Q77.29 3.57 65.23 0L34.77 0Q22.71 3.57 13.14 13.14Q3.57 22.71 0 34.77ZM16.15 16.15Q29.4 2.9 47.83 2.17Q47.1 20.6 33.85 33.85Q20.6 47.1 2.17 47.83Q2.9 29.4 16.15 16.15ZM66.15 33.85Q52.9 20.6 52.17 2.17Q70.6 2.9 83.85 16.15Q97.1 29.4 97.83 47.83Q79.4 47.1 66.15 33.85ZM36.86 36.86Q46.43 27.29 50 15.23Q53.57 27.29 63.14 36.86Q72.71 46.43 84.77 50Q72.71 53.57 63.14 63.14Q53.57 72.71 50 84.77Q46.43 72.71 36.86 63.14Q27.29 53.57 15.23 50Q27.29 46.43 36.86 36.86ZM16.15 83.85Q29.4 97.1 47.83 97.83Q47.1 79.4 33.85 66.15Q20.6 52.9 2.17 52.17Q2.9 70.6 16.15 83.85ZM66.15 66.15Q79.4 52.9 97.83 52.17Q97.1 70.6 83.85 83.85Q70.6 97.1 52.17 97.83Q52.9 79.4 66.15 66.15Z%22/%3E%0D%0A%3C/svg%3E%0D%0A") var(--fx, 0) 0 / var(--tile, 72px) var(--tile, 72px) repeat; }
 
 /* ---------- phones and tablets: smooth first ---------- */
 @media (hover: none), (pointer: coarse) {
@@ -436,6 +436,63 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
   .label-corner svg { filter: none; }
 }
 @media (max-width: 600px) { .skip-link { display: none; } }
+
+/* ---------- liquid glass: TADA's controls ----------
+   Clear glass with a bright rim and a soft lilac depth; the light inside follows the
+   pointer, and a slow sheen crosses it when it wakes. Light and night versions. */
+.glass { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: .5em;
+  min-height: 44px; padding: 0 1.25em; border: 0; border-radius: 999px; cursor: pointer;
+  font: var(--w-regular) var(--fs-small)/1 var(--font); color: var(--night-purple); text-decoration: none; opacity: 1;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .62) 0%, rgba(255, 255, 255, .22) 55%, rgba(201, 179, 207, .26) 100%);
+  -webkit-backdrop-filter: blur(16px) saturate(1.7); backdrop-filter: blur(16px) saturate(1.7);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .95), inset 0 -2px 6px rgba(201, 179, 207, .35), inset 0 0 0 1px rgba(255, 255, 255, .28),
+              0 8px 22px -10px rgba(53, 8, 76, .38), 0 1px 3px rgba(53, 8, 76, .1);
+  transition: transform .6s var(--ease-out), box-shadow .6s var(--ease-out), background .6s var(--ease-out); }
+/* the rim: a thin edge of light, brighter where the light falls */
+.glass::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(140deg, rgba(255, 255, 255, .95), rgba(201, 179, 207, .3) 38%, rgba(146, 109, 143, .25) 62%, rgba(255, 255, 255, .8));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; }
+/* the light inside: follows the pointer; a sheen crosses on hover */
+.glass::after { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; opacity: 0;
+  background: radial-gradient(90px circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, .75), rgba(255, 255, 255, 0) 70%),
+              linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, .55) 48%, transparent 66%) no-repeat;
+  background-size: 100% 100%, 250% 100%; background-position: 0 0, 150% 0;
+  transition: opacity .6s var(--ease-out), background-position 1.4s var(--ease-out); }
+.glass:hover::after, .glass:focus-visible::after { opacity: 1; background-position: 0 0, -50% 0; }
+.glass:hover { box-shadow: inset 0 1px 1px rgba(255, 255, 255, 1), inset 0 -2px 8px rgba(201, 179, 207, .45), inset 0 0 0 1px rgba(255, 255, 255, .4),
+               0 0 0 1px rgba(201, 179, 207, .35), 0 12px 30px -10px rgba(102, 36, 130, .45), 0 0 26px -6px rgba(201, 179, 207, .7); }
+.glass:active { transform: scale(.965); transition-duration: .18s; }
+.glass:focus-visible { outline: 2px solid var(--focus, var(--tada-purple)); outline-offset: 3px; }
+/* night glass: on the dark surfaces and the dark nav */
+.nav[data-ink="light"] .glass, [data-surface="dark"] .glass, .mmenu .glass { color: var(--lilac-mist);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .2) 0%, rgba(255, 255, 255, .06) 55%, rgba(201, 179, 207, .12) 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .45), inset 0 -2px 6px rgba(201, 179, 207, .18), inset 0 0 0 1px rgba(255, 255, 255, .12),
+              0 8px 22px -10px rgba(0, 0, 0, .55); }
+.nav[data-ink="light"] .glass::before, [data-surface="dark"] .glass::before, .mmenu .glass::before {
+  background: linear-gradient(140deg, rgba(255, 255, 255, .7), rgba(201, 179, 207, .2) 40%, rgba(146, 109, 143, .15) 62%, rgba(255, 255, 255, .45)); }
+.nav[data-ink="light"] .glass::after, [data-surface="dark"] .glass::after, .mmenu .glass::after {
+  background: radial-gradient(90px circle at var(--gx, 50%) var(--gy, 0%), rgba(201, 179, 207, .45), rgba(201, 179, 207, 0) 70%),
+              linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, .28) 48%, transparent 66%) no-repeat;
+  background-size: 100% 100%, 250% 100%; background-position: 0 0, 150% 0; }
+.nav[data-ink="light"] .glass:hover::after, [data-surface="dark"] .glass:hover::after, .mmenu .glass:hover::after { background-position: 0 0, -50% 0; }
+.nav[data-ink="light"] .glass:hover, [data-surface="dark"] .glass:hover, .mmenu .glass:hover {
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .6), inset 0 0 0 1px rgba(255, 255, 255, .2), 0 0 0 1px rgba(201, 179, 207, .3), 0 0 28px -6px rgba(201, 179, 207, .6); }
+/* in the nav: compact */
+.nav .glass { min-height: 38px; padding: 0 1em; }
+.nav .glass::after { inset: 0; }
+.nav-sound.glass[aria-pressed="false"], .mmenu-sound.glass[aria-pressed="false"] { opacity: .7; }
+.glass.nav-lang, .glass.mmenu-lang { font-family: var(--font-en); font-weight: 500; }
+html[lang="en"] .glass.nav-lang, html[lang="en"] .glass.mmenu-lang { font-family: var(--font-fa); }
+.footer-links { gap: var(--s-4); }
+.pack-cta .glass { min-height: 40px; }
+.nav-menu-btn.glass { display: none; }
+@media (max-width: 600px) { .nav-sound.glass { display: none; } }
+@media (max-width: 600px) { .nav-menu-btn.glass { display: inline-flex; } }
+@media (hover: none), (pointer: coarse) {
+  /* glass stays light on phones: a small blur only on these few pills */
+  .glass { -webkit-backdrop-filter: blur(10px) saturate(1.5); backdrop-filter: blur(10px) saturate(1.5); }
+}
 
 </style>
 <style>
@@ -526,7 +583,13 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
 [dir="ltr"] .ld-gate-bar b { right: auto; left: calc(var(--p, 0) * 100%); margin: -3.5px 0 0 -3.5px; }
 .ld-gate-label { margin: 0; font: 300 13px/1.6 var(--font-fa); letter-spacing: .02em; opacity: .72; }
 [lang="en"] .ld-gate-label { font-family: var(--font-en, inherit); }
-@media (prefers-reduced-motion: reduce) { .ld-gate-star { animation: none; } }
+/* sound needs one touch: when the light is full the gate asks for it, softly */
+.ld-gate.is-waiting { cursor: pointer; }
+.ld-gate.is-waiting .ld-gate-label { opacity: .92; animation: gate-ask 2.6s ease-in-out infinite; }
+.ld-gate.is-waiting .ld-gate-star { filter: drop-shadow(0 0 16px rgba(201, 179, 207, .85)); }
+@keyframes gate-ask { 0%, 100% { opacity: .62; } 50% { opacity: 1; } }
+.ld-gate:focus { outline: none; }
+@media (prefers-reduced-motion: reduce) { .ld-gate-star, .ld-gate.is-waiting .ld-gate-label { animation: none; } }
 
 </style>
 </head>
@@ -559,9 +622,9 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
     <a href="#collab" data-t="nav.collab">همکاری</a>
   </nav>
   <div class="nav-tools">
-    <button class="nav-sound sound-toggle" type="button" aria-pressed="true" data-sfx="none">صدا: روشن</button>
-    <button class="nav-menu-btn" id="menuBtn" type="button" aria-controls="mMenu" aria-expanded="false" data-t="menuBtn">فهرست</button>
-    <button class="nav-lang" id="langToggle" type="button" lang="en" aria-label="Switch language" data-t="langSwitch">EN</button>
+    <button class="nav-sound sound-toggle glass" type="button" aria-pressed="true" data-sfx="none">صدا: روشن</button>
+    <button class="nav-menu-btn glass" id="menuBtn" type="button" aria-controls="mMenu" aria-expanded="false" data-t="menuBtn">فهرست</button>
+    <button class="nav-lang glass" id="langToggle" type="button" lang="en" aria-label="Switch language" data-t="langSwitch">EN</button>
   </div>
 </header>
 
@@ -569,7 +632,7 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
 <div class="mmenu" id="mMenu" data-surface="dark" role="dialog" aria-modal="true" aria-labelledby="mMenuTitle" hidden>
   <div class="mmenu-head">
     <p class="mmenu-title" id="mMenuTitle" data-t="menuBtn">فهرست</p>
-    <button class="mmenu-close" type="button" data-t="menuClose">بستن</button>
+    <button class="mmenu-close glass" type="button" data-t="menuClose">بستن</button>
   </div>
   <nav class="mmenu-links" aria-label="بخش‌ها">
     <a href="#top"><span data-t="nav.top">آغاز</span></a>
@@ -579,8 +642,8 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
     <a href="#collab"><span data-t="nav.collab">همکاری</span></a>
   </nav>
   <div class="mmenu-tools">
-    <button class="mmenu-sound sound-toggle" type="button" aria-pressed="true" data-sfx="none">صدا: روشن</button>
-    <button class="mmenu-lang" type="button" lang="en" data-t="langSwitch">EN</button>
+    <button class="mmenu-sound sound-toggle glass" type="button" aria-pressed="true" data-sfx="none">صدا: روشن</button>
+    <button class="mmenu-lang glass" type="button" lang="en" data-t="langSwitch">EN</button>
   </div>
 </div>
 
@@ -646,7 +709,7 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
     <div class="container collab-col">
       <h2 class="h2" data-t="collab.title"></h2>
       <dl class="notes" id="collabItems"></dl>
-      <p class="body"><a class="link" id="collabLink" href="https://www.instagram.com/tada_lounge/" rel="noopener" data-t="collab.cta"></a> <span class="soft" lang="en" dir="ltr">@tada_lounge</span></p>
+      <p class="body"><a class="glass" id="collabLink" href="https://www.instagram.com/tada_lounge/" rel="noopener" data-t="collab.cta"></a> <span class="soft" lang="en" dir="ltr">@tada_lounge</span></p>
     </div>
     <svg class="ink" data-ink="collab" aria-hidden="true"></svg>
   </section>
@@ -730,7 +793,7 @@ const CONTENT = {
     dir: 'rtl',
     langSwitch: 'EN',
     skip: 'رد کردن',
-    gate: { loading: 'در حال آماده‌سازی…' },
+    gate: { loading: 'در حال آماده‌سازی…', enterTouch: 'برای ورود، صفحه را لمس کنید', enterClick: 'برای ورود کلیک کنید' },
     nav: { top: 'آغاز', story: 'تادا', product: 'منو', branches: 'شعبه‌ها', collab: 'همکاری', order: 'سفارش' },
     skipTo: 'پرش به محتوا', menuBtn: 'فهرست', menuClose: 'بستن',
     sound: { on: 'صدا: روشن', off: 'صدا: خاموش' },
@@ -828,7 +891,7 @@ const CONTENT = {
     dir: 'ltr',
     langSwitch: 'فا',
     skip: 'Skip',
-    gate: { loading: 'Preparing…' },
+    gate: { loading: 'Preparing…', enterTouch: 'Tap to enter', enterClick: 'Click to enter' },
     nav: { top: 'Start', story: 'Tada', product: 'Menu', branches: 'Branches', collab: 'Work with us', order: 'Order' },
     skipTo: 'Skip to content', menuBtn: 'Index', menuClose: 'Close',
     sound: { on: 'Sound: on', off: 'Sound: off' },
@@ -1388,7 +1451,12 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
 // the first pointer/key event (or when the user turns sound on). Until then every
 // call is a silent no-op. Preference is remembered in localStorage ('tada.sound').
 //
-// Exposes window.TadaSound = { enabled(), setEnabled(v), toggle(), unlock(), sfx, bind() }.
+// Some browsers let a site sound before any gesture (the visitor allowed it, or has
+// played here before): probe() asks quietly, and the entrance plays from the start
+// when the answer is yes. iOS only opens audio inside touchend or click, so those
+// unlock too.
+//
+// Exposes window.TadaSound = { enabled(), setEnabled(v), toggle(), unlock(), probe(), sfx, bind() }.
 
 (function () {
   'use strict';
@@ -1510,6 +1578,17 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
     tada() { arp([0, 4, 7, 12], { gap: 0.07, gain: 0.035 }); sparkles(0.25, 4); },
     tile(i) { if (every('tile', 40)) tone(note(PENTA[i % 5] + 12 * Math.floor(i / 5)), 0.3, { gain: 0.026, reverb: true }); },
     bubble() { if (every('bubble', 60)) tone(600 + Math.random() * 300, 0.07, { gain: 0.022, slideTo: 1100 + Math.random() * 300 }); },
+    // The entrance: a soft note for each stretch of the filling light, then the door opens
+    gateNote(i) {
+      tone(note(PENTA[i % 5]), 1.1, { gain: 0.018, attack: 0.05, reverb: true });
+      tone(note(PENTA[i % 5] + 12), 0.8, { gain: 0.006, attack: 0.08, delay: 0.04, reverb: true });
+      sparkles(0.08, 1, 0.005);
+    },
+    gateOpen() {
+      air(1.3, { gain: 0.028, from: 500, to: 4200, reverb: true });
+      arp([0, 7, 12, 19], { gap: 0.12, gain: 0.026, type: 'sine' });
+      sparkles(0.45, 4, 0.007);
+    },
   };
 
   function setEnabled(v) {
@@ -1519,6 +1598,16 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
     listeners.forEach(fn => fn(wanted));
   }
   const unlock = () => { gestured = true; if (wanted) engine(); };
+  // Ask, without a gesture, whether this browser already lets the site sound.
+  function probe() {
+    if (!wanted || typeof AudioContext === 'undefined') return Promise.resolve(false);
+    if (matchMedia('(pointer: coarse)').matches && !gestured) return Promise.resolve(false);   // phones and tablets never allow it
+    if (gestured && ctx && ctx.state === 'running') return Promise.resolve(true);
+    const was = gestured; gestured = true;
+    const c = engine(); gestured = was;
+    if (!c) return Promise.resolve(false);
+    return new Promise(r => setTimeout(() => { const ok = c.state === 'running'; if (ok) gestured = true; r(ok); }, 90));
+  }
 
   // Global bindings: hover/tap on interactive elements, like the reference.
   const SEL = 'button, a[href], [role="button"], summary';
@@ -1542,9 +1631,11 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       (t.closest('.nav-links') ? sfx.nav : sfx.tap)();
     }, { passive: true });
     document.addEventListener('keydown', unlock, { passive: true, once: true });
+    document.addEventListener('touchend', unlock, { passive: true });   // iOS opens audio here
+    document.addEventListener('click', unlock, { passive: true });
   }
 
-  window.TadaSound = { enabled: () => wanted, setEnabled, toggle: () => setEnabled(!wanted), unlock, sfx, bind, onChange: fn => listeners.add(fn) };
+  window.TadaSound = { enabled: () => wanted, setEnabled, toggle: () => setEnabled(!wanted), unlock, probe, sfx, bind, onChange: fn => listeners.add(fn) };
 })();
 
 </script>
@@ -1645,7 +1736,7 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
     const fl = $('#footerLinks'); fl.replaceChildren();
     t.footer.links.forEach(l => {
       const li = document.createElement('li'); const a = document.createElement('a');
-      a.className = 'link'; a.href = l.href; a.rel = 'noopener'; a.textContent = l.t; li.appendChild(a); fl.appendChild(li);
+      a.className = 'glass'; a.href = l.href; a.rel = 'noopener'; a.textContent = l.t; li.appendChild(a); fl.appendChild(li);
     });
     $('#year').textContent = num(new Date().getFullYear());
     $('#footerLockup').innerHTML = '<img src="data:image/svg+xml;charset=utf-8,%3C%3Fxml version=%221.0%22 encoding=%22UTF-8%22%3F%3E%0D%0A%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1323.56 974.06%22 width=%221324%22 height=%22974%22%3E%3Ctitle%3ETADA wordmark %2B tagline %E2%80%94 purple%3C/title%3E%0D%0A%3Cpath fill=%22%23662482%22 fill-rule=%22evenodd%22 d=%22M120.28 91.28L120.28 305.28L104.28 305.28L104.28 91.28L120.28 91.28ZM1230.28 191.28L1230.28 313.28L556.28 313.28L556.28 91.28L572.28 91.28L572.28 297.28L1214.28 297.28L1214.28 191.28L1230.28 191.28ZM232.28 94.28L496.21 94.28L489.19 106.31Q484.87 113.71 475.54 130.04Q447.75 178.69 432.04 202.99Q427.04 210.72 422.18 217.81Q422.45 218.02 422.75 218.26Q472.64 257.76 516.37 309.09L504.19 319.47Q461.53 269.39 412.93 230.9Q396.58 253.3 381.94 267.94Q351.09 298.79 312.78 312.79Q274.91 326.64 240.78 320.14Q208.91 313.43 197.05 282.11Q186.41 254.02 196.62 219.98L196.64 219.89L196.67 219.81Q207.13 187.61 241.54 171.65Q272.77 157.16 311.14 161.33Q353.13 166.42 409.45 208.08Q413.96 201.48 418.6 194.3Q434.07 170.37 461.65 122.11Q465.44 115.46 468.42 110.28L232.28 110.28L232.28 94.28ZM1126.28 137.28L982.28 137.28L982.28 153.28L1126.28 153.28L1126.28 137.28ZM309.42 177.23Q347.2 181.81 400.24 221.15Q384.51 242.73 370.62 256.62Q342.27 284.98 307.28 297.77Q273.56 310.09 243.78 304.42Q220.77 299.58 212.01 276.45Q203.3 253.46 211.92 224.67Q220.24 199.17 248.27 186.16Q275.47 173.54 309.42 177.23ZM1026.28 613.28L997.6 613.28L1029.55 553.28L1165.67 553.28L1196.23 613.28L1154.28 613.28L1154.28 629.28L1232.28 629.28L1232.28 613.28L1214.18 613.28L1099.44 387.96L979.48 613.28L944.28 613.28L944.28 629.28L1026.28 629.28L1026.28 613.28ZM91.28 455.28L91.28 399.28L367.28 399.28L367.28 455.28L351.28 455.28L351.28 415.28L237.28 415.28L237.28 613.28L302.28 613.28L302.28 629.28L159.28 629.28L159.28 613.28L221.28 613.28L221.28 415.28L107.28 415.28L107.28 455.28L91.28 455.28ZM414.28 451.28L414.28 399.28L686.21 399.28L679.19 411.31Q674.87 418.71 665.54 435.04Q637.74 483.69 622.04 507.99Q617.04 515.72 612.18 522.81Q612.45 523.02 612.75 523.26Q662.64 562.76 706.37 614.09L694.19 624.47Q651.53 574.39 602.93 535.9Q586.58 558.3 571.94 572.94Q541.09 603.79 502.78 617.79Q464.91 631.64 430.78 625.14Q398.91 618.43 387.05 587.11Q376.41 559.02 386.62 524.98L386.64 524.89L386.67 524.81Q397.13 492.61 431.54 476.65Q462.77 462.16 501.14 466.33Q543.13 471.42 599.45 513.08Q603.96 506.48 608.6 499.3Q624.07 475.37 651.65 427.11Q655.44 420.46 658.42 415.28L430.28 415.28L430.28 451.28L414.28 451.28ZM834.28 399.28L739.28 399.28L739.28 415.28L786.28 415.28L786.28 613.28L739.28 613.28L739.28 629.28L834.28 629.28Q892.37 629.28 926.92 596.45Q960.28 564.75 960.28 514.28Q960.28 490.51 951.8 469.66Q943.22 448.55 926.95 432.89Q892.04 399.28 834.28 399.28ZM802.28 613.28L834.28 613.28Q885.98 613.28 915.89 584.86Q944.28 557.88 944.28 514.28Q944.28 471.78 915.86 444.42Q885.59 415.28 834.28 415.28L802.28 415.28L802.28 613.28ZM1157.52 537.28L1038.07 537.28L1099.12 422.6L1157.52 537.28ZM499.42 482.23Q537.2 486.81 590.24 526.15Q574.52 547.73 560.62 561.62Q532.27 589.97 497.28 602.77Q463.56 615.09 433.78 609.42Q410.77 604.58 402.01 581.45Q393.3 558.46 401.92 529.67Q410.24 504.17 438.27 491.16Q465.47 478.54 499.42 482.23ZM1224.22 747.07Q1224.07 747.07 1222.56 747.38Q1221.05 747.68 1218.55 748.28Q1216.05 748.89 1212.88 749.49Q1209.7 750.1 1206.52 750.86Q1198.96 752.52 1189.28 754.49L1188.06 749.34L1205.16 745.56Q1204.4 742.69 1203.57 738.6Q1202.74 734.52 1202.29 732.4Q1201.83 730.58 1202.29 728.69Q1202.74 726.8 1203.95 725.21Q1205.16 723.62 1207.05 722.56Q1208.94 721.5 1211.67 721.35L1219.68 720.75Q1223.62 720.6 1226.87 723.17Q1230.12 725.74 1230.88 729.67L1232.09 736.33Q1232.85 740.57 1230.58 743.29Q1228.31 746.01 1224.22 747.07ZM1226.8 737.24L1225.13 729.98Q1224.83 728.01 1223.16 727.1Q1221.5 726.19 1219.99 726.5L1211.52 727.25Q1210 727.1 1208.79 728.77Q1207.58 730.43 1208.04 732.7L1210.91 744.35L1223.16 741.78Q1224.53 741.48 1225.81 740.27Q1227.1 739.05 1226.8 737.24ZM380.61 825.29Q380.61 829.38 379.03 833.01Q377.44 836.64 374.71 839.36Q371.99 842.09 368.36 843.67Q364.73 845.26 360.64 845.26L274.41 845.26Q267.15 845.26 260.26 843.3Q253.38 841.33 247.02 836.94Q240.82 841.18 233.94 843.22Q227.05 845.26 219.79 845.26L191.2 845.26Q186.81 845.26 182.5 843.37Q178.19 841.48 175.46 837.4Q174.71 842.24 172.06 843.75Q169.41 845.26 165.48 845.26L146.41 845.26Q142.03 845.26 138.32 843.37Q134.61 841.48 132.04 838.45Q129.47 835.43 128.41 831.34Q127.35 827.26 128.11 823.02L131.74 803.05L123.27 803.05Q120.69 803.05 118.5 804.19Q116.31 805.32 114.64 807.14Q112.98 808.95 111.99 811.3Q111.01 813.64 111.01 816.21L111.01 882.48L102.69 882.48L102.69 816.21Q102.69 811.68 104.43 807.59Q106.17 803.51 109.2 800.48Q112.22 797.45 116.23 795.71Q120.24 793.97 124.78 793.97L157.46 793.97Q161.54 793.97 165.17 795.56Q168.8 797.15 171.53 799.87Q174.25 802.6 175.84 806.23Q177.43 809.86 177.43 813.94L177.43 823.17Q177.43 828.32 181.06 831.87Q184.69 835.43 189.68 835.43L220.4 835.43Q224.93 835.43 229.55 834.6Q234.16 833.76 238.55 832.1L218.58 818.48L218.58 800.33Q218.58 795.34 221.68 792.23Q224.78 789.13 229.78 789.13L257.61 789.13Q261.4 789.13 264.8 790.57Q268.2 792.01 270.7 794.5Q273.2 797 274.71 800.33Q276.22 803.66 276.22 807.59L276.22 811.22Q276.22 814.25 274.79 817.05Q273.35 819.85 270.78 821.66L256.1 831.8Q260.49 833.46 265.1 834.44Q269.72 835.43 274.41 835.43L300.28 835.43L317.37 816.97L317.37 746.92L325.7 746.92L325.7 803.35Q325.7 804.41 325.62 805.4Q325.54 806.38 325.39 807.14Q325.24 808.04 325.09 808.8Q325.24 808.5 326 807.74Q326.75 806.99 327.51 806.15L329.02 804.49Q329.78 803.66 329.93 803.51Q334.17 798.97 339.69 796.55Q345.21 794.13 351.42 794.13L360.64 794.13Q364.73 794.13 368.36 795.71Q371.99 797.3 374.71 800.03Q377.44 802.75 379.03 806.38Q380.61 810.01 380.61 814.1L380.61 825.29ZM958.25 835.43L841.6 835.43Q836.61 835.43 833.06 831.87Q829.5 828.32 829.5 823.32L829.5 746.92L821.18 746.92L821.18 823.32Q821.18 827.86 822.92 831.87Q824.66 835.88 827.61 838.83Q830.56 841.78 834.57 843.52Q838.58 845.26 843.12 845.26L958.25 845.26Q966.12 845.26 973.46 842.54Q980.79 839.82 986.69 834.52L1004.4 818.79Q1005.91 817.42 1007.35 816.21Q1008.78 815 1010.45 814.17Q1012.11 813.34 1014.15 813.19Q1016.2 813.04 1018.77 813.79L1024.52 815.46L1026.79 807.74L968.99 790.34Q965.66 789.28 962.34 789.74Q959.01 790.19 956.13 791.78Q953.26 793.37 951.06 795.94Q948.87 798.51 947.96 801.84L944.63 813.19L951.9 815.16L955.22 804.11Q956.13 800.93 959.23 798.97Q962.34 797 965.66 798.06L1003.79 809.25Q1003.03 809.71 1001.97 810.47Q1000.92 811.22 1000.16 811.98L985.18 825.29Q979.58 830.13 972.7 832.78Q965.82 835.43 958.25 835.43ZM1229.22 777.33L1217.87 777.33L1217.87 765.98L1229.22 765.98L1229.22 777.33ZM743.87 840.87Q748.26 845.26 754.61 845.26L776.25 845.26Q783.05 845.26 788.35 842.09Q793.64 838.91 796.44 833.76Q799.24 828.62 799.17 822.19Q799.09 815.76 795.46 809.25L779.12 779.9L772.16 784.75L789.11 815Q790.77 817.73 790.92 821.28Q791.07 824.84 789.71 828.02Q788.35 831.19 785.17 833.31Q781.99 835.43 776.85 835.43L753.55 835.43Q750.07 835.43 748.33 833.23Q746.59 831.04 746.59 828.02L746.59 815.31L739.48 815.31L739.48 830.13Q739.48 836.49 743.87 840.87ZM1118.62 796.7L1107.27 796.7L1107.27 785.35L1118.62 785.35L1118.62 796.7ZM1137.84 796.7L1126.49 796.7L1126.49 785.35L1137.84 785.35L1137.84 796.7ZM716.79 846.78Q716.79 851.92 715.2 856.76Q713.61 861.6 710.74 865.61Q707.86 869.62 703.85 872.65Q699.84 875.67 695 877.34L678.81 882.78L676.09 874.16L693.19 868.41Q699.99 866.14 704.15 860.47Q708.32 854.79 708.32 847.53L708.32 844.2Q706.2 845.26 703.17 845.26L685.77 845.26Q681.39 845.26 677.68 843.37Q673.97 841.48 671.4 838.45Q668.83 835.43 667.77 831.34Q666.71 827.26 667.47 823.02L670.04 809.25Q670.64 805.93 672.31 803.2Q673.97 800.48 676.47 798.44Q678.96 796.39 681.99 795.26Q685.02 794.13 688.34 794.13L696.82 794.13Q700.9 794.13 704.53 795.71Q708.16 797.3 710.89 799.95Q713.61 802.6 715.2 806.23Q716.79 809.86 716.79 813.94L716.79 846.78ZM632.44 831.87Q628.89 835.43 623.89 835.43L468.52 835.43L468.52 845.26L496.35 845.26L496.35 853.43Q496.35 857.06 494.99 860.24Q493.63 863.42 491.21 865.84Q488.79 868.26 485.61 869.62Q482.43 870.98 478.8 870.98L452.78 870.98Q448.55 870.98 444.76 869.32Q440.98 867.65 438.18 864.85Q435.38 862.06 433.72 858.27Q432.05 854.49 432.05 850.26L432.05 816.82L423.73 816.82L423.73 851.77Q423.73 857.82 426 863.11Q428.27 868.41 432.21 872.34Q436.14 876.28 441.43 878.55Q446.73 880.82 452.78 880.82L478.8 880.82Q484.1 880.82 488.86 878.77Q493.63 876.73 497.11 873.25Q500.59 869.77 502.63 865.01Q504.68 860.24 504.68 854.95L504.68 848.74Q504.68 847.08 503.92 845.26L622.38 845.26Q626.92 845.26 630.93 843.52Q634.94 841.78 637.89 838.83Q640.84 835.88 642.58 831.87Q644.32 827.86 644.32 823.32L644.32 796.7L636 796.7L636 823.32Q636 828.32 632.44 831.87ZM1078.23 818.03L1078.23 796.7L1069.9 796.7L1069.9 819.54Q1069.9 824.84 1071.95 829.53Q1073.99 834.22 1077.55 837.7Q1081.1 841.18 1085.79 843.22Q1090.48 845.26 1095.78 845.26L1153.27 845.26Q1158.87 845.26 1163.56 842.61Q1168.25 839.97 1171.27 834.97Q1174.3 839.82 1178.91 842.54Q1183.53 845.26 1189.12 845.26L1206.37 845.26Q1210.91 845.26 1214.92 843.52Q1218.93 841.78 1221.88 838.83Q1224.83 835.88 1226.57 831.87Q1228.31 827.86 1228.31 823.32L1228.31 796.7L1219.99 796.7L1219.99 823.32Q1219.99 828.32 1216.43 831.87Q1212.88 835.43 1207.88 835.43L1187.61 835.43Q1182.47 835.43 1178.91 831.87Q1175.36 828.32 1175.36 823.17L1175.36 800.93L1167.04 800.93L1167.04 823.17Q1167.04 828.32 1163.48 831.87Q1159.92 835.43 1154.93 835.43L1095.78 835.43Q1092.15 835.43 1088.97 834.07Q1085.79 832.71 1083.37 830.36Q1080.95 828.02 1079.59 824.84Q1078.23 821.66 1078.23 818.03ZM233.03 817.42Q229.47 815 226.9 813.34L226.9 798.21L257.92 798.21Q262.15 798.21 265.03 801.01Q267.9 803.81 267.9 808.2L267.9 813.19L247.78 827.56Q243.69 824.84 239.91 822.11Q236.58 819.85 233.03 817.42ZM138.09 831.95Q135.52 828.47 136.28 824.08L140.06 803.05L158.21 803.05Q162.75 803.05 165.93 806.23Q169.11 809.41 169.11 813.79L169.11 835.43L145.81 835.43Q140.66 835.43 138.09 831.95ZM361.55 835.43Q365.94 835.43 369.12 832.25Q372.29 829.07 372.29 824.69L372.29 814.7Q372.29 809.86 368.97 806.53Q365.64 803.2 360.8 803.2L351.42 803.2Q346.57 803.2 342.19 805.17Q337.8 807.14 334.47 810.62L311.02 835.43L361.55 835.43ZM685.02 835.43L708.47 835.43L708.47 813.94Q708.47 809.41 705.29 806.3Q702.11 803.2 697.57 803.2L688.5 803.2Q684.56 803.2 681.61 805.62Q678.66 808.04 677.91 811.83L675.64 824.08Q675.18 826.35 675.79 828.39Q676.39 830.44 677.68 832.02Q678.96 833.61 680.86 834.52Q682.75 835.43 685.02 835.43ZM619.35 874.76L608.01 874.76L608.01 863.42L619.35 863.42L619.35 874.76ZM638.57 874.76L627.22 874.76L627.22 863.42L638.57 863.42L638.57 874.76ZM975.95 874.76L987.3 874.76L987.3 863.42L975.95 863.42L975.95 874.76Z%22/%3E%0D%0A%3C/svg%3E%0D%0A" alt="" width="240" height="177">';
@@ -1675,7 +1766,7 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
         lab.innerHTML = `<div class="pack-grid"><svg class="pouch" viewBox="0 0 320 440" aria-hidden="true"></svg><div class="pack-text">
           <h3 class="label-name"></h3><p class="label-sub"></p>
           <dl class="specs"></dl><p class="pack-note flag"></p><div class="rulers"></div>
-          <p class="pack-cta"><a class="link" href="${SITE.shop}" rel="noopener"></a></p></div></div>`;
+          <p class="pack-cta"><a class="glass" href="${SITE.shop}" rel="noopener"></a></p></div></div>`;
         $('.label-name', lab).textContent = p.title;
         $('.label-sub', lab).textContent = p.size;
         $('.pack-note', lab).textContent = p.profileFlag;
@@ -2001,12 +2092,28 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
   // ---------- one pattern sheet for the whole page ----------
   // Every section carries the same faint shippo sheet, and each sheet is shifted so its
   // tiles sit on one page-wide grid: across section edges and through the pinned scenes
-  // the pattern runs on as a single piece. With a mouse the sheet drifts a little slower
-  // than the page, for depth. Under the mouse a halo wakes the pattern, and a slower halo
+  // the pattern runs on as a single piece. The grid is the one the pen draws in the story:
+  // same circle size, and anchored on the drawn lattice, so where the magic draws the
+  // pattern it lands exactly on the faint one. Under the mouse a halo wakes the pattern, and a slower halo
   // trails behind so the place the cursor left fades out gently; the halo is one shape in
   // screen space, drawn into every section it touches, so it crosses edges unbroken.
   const FIELD_HOSTS = ['#heroStage', '#story', '#menu', '#branches', '#collab', '#footer'];
-  const TILE = 72, DRIFT = fine && !reduce ? 0.8 : 1, PX = 1 / Math.min(devicePixelRatio || 1, 2);
+  const $story = $('#story');
+  // the light inside the glass controls follows the pointer
+  if (fine) addEventListener('pointermove', e => {
+    const gl = e.target.closest && e.target.closest('.glass'); if (!gl) return;
+    const r = gl.getBoundingClientRect();
+    gl.style.setProperty('--gx', (e.clientX - r.left).toFixed(0) + 'px'); gl.style.setProperty('--gy', (e.clientY - r.top).toFixed(0) + 'px');
+  }, { passive: true });
+  const PX = 1 / Math.min(devicePixelRatio || 1, 2);
+  // the grid: tile size and one tile corner (a circle centre) in story coordinates; set by buildRoute
+  const grid = { T: 72, ox: 0, oy: 0, set: false };
+  function setGrid(T, ox, oy) {
+    grid.T = T; grid.ox = ox; grid.oy = oy; grid.set = true;
+    document.documentElement.style.setProperty('--tile', T.toFixed(2) + 'px');
+    const fx = (((ox % T) + T) % T).toFixed(2) + 'px';
+    for (const f of fields) { f.sheet.style.backgroundPositionX = fx; if (f.aura) f.aura.style.setProperty('--fx', fx); f.t = -1; }
+  }
   const halo = { ax: 0, ay: 0, bx: 0, by: 0, o: 0, seen: false };
   let fields = [], auraMoved = 0, hasAura = false;
   function buildField() {
@@ -2019,9 +2126,10 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       let aura = null;
       if (hasAura) { aura = document.createElement('i'); aura.className = 'bg-aura'; box.append(aura); }
       host.prepend(box);
-      return { host, sheet, aura, t: -1, vis: false, max: sel === '#heroStage' ? 0.34 : 0.46 };
+      return { host, sheet, aura, t: -1, vis: false, max: sel === '#heroStage' ? 0.2 : 0.24 };   // faint: text stays easy to read
     }).filter(Boolean);
     if (hasAura) addEventListener('pointermove', e => { if (e.pointerType === 'mouse') auraMoved = performance.now(); }, { passive: true });
+    if (grid.set) setGrid(grid.T, grid.ox, grid.oy);
   }
   function fieldStep(dt, now) {
     if (!fields.length) return;
@@ -2038,12 +2146,13 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       if (h.o < 0.004 && !mouse.on) h.seen = false;
     }
     const lit = hasAura && h.o >= 0.004, hy0 = Math.min(h.ay - 200, h.by - 340), hy1 = Math.max(h.ay + 200, h.by + 340);
-    const g = DRIFT * scrollY;
+    // the anchor: where the drawn lattice's first circle centre is on screen right now
+    const TILE = grid.T, anchor = (grid.set ? $story.getBoundingClientRect().top : -scrollY) + grid.oy;
     for (const f of fields) {
       const r = f.host.getBoundingClientRect();
       if (r.bottom < 0 || r.top > innerHeight) { if (f.vis) { f.aura.style.opacity = 0; f.vis = false; } continue; }
-      // the shift that puts this sheet's tiles on the page grid
-      let t = ((TILE - r.top - g) % TILE + TILE) % TILE;
+      // the shift that puts this sheet's tile corners on the anchor's grid
+      let t = (((anchor - r.top) % TILE) + TILE) % TILE;
       t = Math.round(t / PX) * PX;
       if (t !== f.t) {
         f.t = t; const tf = `translate3d(0,${t}px,0)`;
@@ -2491,6 +2600,7 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       const hr = host.getBoundingClientRect(); sizeSvg(svg, hr.width, hr.height);
       const lr = rel(lat.getBoundingClientRect(), hr);
       const y0 = lr.y + rr;                           // row 0 centre line
+      setGrid(2 * rr, xs + rr, y0);                   // the faint sheet everywhere takes this lattice's grid
       const pen = makePen(svg, xs, 0, 'S', sgn);
       pen.line(y0);
       pen.lattice(rows, n, rr, (latH * 1.7 + 160) * 2.6);   // slow and calm: the pattern takes its time
@@ -3032,33 +3142,60 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
     }
     return Promise.all(jobs);
   }
-  // The entrance: the star breathes, a bar of light fills as the site loads, then the
-  // site opens by itself. Browsers keep sound off until the first tap or click, so the
-  // TADA notes join from the visitor's first touch.
+  // The entrance: the star breathes and a bar of light fills as the site loads, each
+  // stretch of it with a soft note. Browsers keep sound off until the visitor touches the
+  // page, unless they already allow this site: then it all plays and the site opens by
+  // itself. Otherwise, once the light is full, the gate asks for one touch (or click, or
+  // key), and that touch opens the site with its sound.
   function entrance() {
     return new Promise(resolve => {
       const g = $('#ldGate');
       if (!g) { resolve(); return; }
-      const barBox = $('.ld-gate-bar', g), bar = $('i', barBox);
+      const barBox = $('.ld-gate-bar', g), bar = $('i', barBox), label = $('.ld-gate-label', g);
       $('.ld-gate-star', g).innerHTML = `<svg viewBox="${LOW.cx - LOW.r} ${LOW.cy - LOW.r} ${2 * LOW.r} ${2 * LOW.r}"><path d="${LOW.d}"/></svg>`;
       const lockWas = document.documentElement.style.overflow;
       document.documentElement.style.overflow = 'hidden';
+      let heard = false, waiting = false, done = false, notes = 0;
+      SND.probe().then(ok => { if (ok) heard = true; });
       const shown = { v: 0 };
       const render = () => {
         bar.style.transform = `scaleX(${shown.v})`;
         barBox.style.setProperty('--p', shown.v.toFixed(4));
         barBox.setAttribute('aria-valuenow', Math.round(shown.v * 100));
+        while (heard && SND.enabled() && notes < 4 && shown.v >= 0.18 + notes * 0.24) sfx.gateNote(notes++);
+      };
+      const open = () => {
+        if (done) return; done = true;
+        removeEventListener('click', onGesture, true); removeEventListener('keydown', onGesture, true);
+        if (SND.enabled()) sfx.gateOpen();
+        document.documentElement.style.overflow = lockWas;
+        g.classList.remove('is-waiting'); g.removeAttribute('role'); g.removeAttribute('tabindex');
+        gsap.to(g, { opacity: 0, duration: 0.55, delay: 0.12, ease: 'power2.inOut', onComplete: () => g.remove() });
+        setTimeout(resolve, 240);
+      };
+      function onGesture(e) {
+        if (e.type === 'keydown' && (e.metaKey || e.ctrlKey || e.altKey || e.key === 'Tab' || e.key === 'Shift')) return;
+        SND.unlock(); heard = true;
+        if (waiting) { e.preventDefault(); open(); }
+      }
+      addEventListener('click', onGesture, true); addEventListener('keydown', onGesture, true);
+      const ask = () => {
+        if (heard || !SND.enabled()) { open(); return; }
+        waiting = true;
+        const t = T().gate, text = fine ? t.enterClick : t.enterTouch;
+        g.setAttribute('role', 'button'); g.tabIndex = 0; g.setAttribute('aria-label', text);
+        gsap.to(label, { opacity: 0, duration: 0.3, ease: 'power1.in', onComplete: () => {
+          label.textContent = text; g.classList.add('is-waiting');
+          gsap.fromTo(label, { opacity: 0 }, { opacity: 0.92, duration: 0.6, ease: 'power1.out', clearProps: 'opacity' });
+        } });
+        g.focus({ preventScroll: true });
       };
       const t0 = performance.now();
       let target = 0;
       preload(f => { if (f > target) { target = f; gsap.to(shown, { v: target * 0.94, duration: 0.45, ease: 'power2.out', overwrite: true, onUpdate: render }); } })
         .then(() => {
           const wait = Math.max(0, 500 - (performance.now() - t0)) / 1000;   // never a flash
-          gsap.to(shown, { v: 1, duration: 0.4, delay: wait, ease: 'power2.inOut', overwrite: true, onUpdate: render, onComplete: () => {
-            document.documentElement.style.overflow = lockWas;
-            gsap.to(g, { opacity: 0, duration: 0.55, delay: 0.12, ease: 'power2.inOut', onComplete: () => g.remove() });
-            setTimeout(resolve, 240);
-          } });
+          gsap.to(shown, { v: 1, duration: 0.4, delay: wait, ease: 'power2.inOut', overwrite: true, onUpdate: render, onComplete: () => setTimeout(ask, 120) });
         });
     });
   }

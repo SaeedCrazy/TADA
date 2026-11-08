@@ -85,4 +85,10 @@
 [dir="ltr"] .ld-gate-bar b { right: auto; left: calc(var(--p, 0) * 100%); margin: -3.5px 0 0 -3.5px; }
 .ld-gate-label { margin: 0; font: 300 13px/1.6 var(--font-fa); letter-spacing: .02em; opacity: .72; }
 [lang="en"] .ld-gate-label { font-family: var(--font-en, inherit); }
-@media (prefers-reduced-motion: reduce) { .ld-gate-star { animation: none; } }
+/* sound needs one touch: when the light is full the gate asks for it, softly */
+.ld-gate.is-waiting { cursor: pointer; }
+.ld-gate.is-waiting .ld-gate-label { opacity: .92; animation: gate-ask 2.6s ease-in-out infinite; }
+.ld-gate.is-waiting .ld-gate-star { filter: drop-shadow(0 0 16px rgba(201, 179, 207, .85)); }
+@keyframes gate-ask { 0%, 100% { opacity: .62; } 50% { opacity: 1; } }
+.ld-gate:focus { outline: none; }
+@media (prefers-reduced-motion: reduce) { .ld-gate-star, .ld-gate.is-waiting .ld-gate-label { animation: none; } }

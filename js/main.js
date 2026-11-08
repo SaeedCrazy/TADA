@@ -94,7 +94,7 @@
     const fl = $('#footerLinks'); fl.replaceChildren();
     t.footer.links.forEach(l => {
       const li = document.createElement('li'); const a = document.createElement('a');
-      a.className = 'link'; a.href = l.href; a.rel = 'noopener'; a.textContent = l.t; li.appendChild(a); fl.appendChild(li);
+      a.className = 'glass'; a.href = l.href; a.rel = 'noopener'; a.textContent = l.t; li.appendChild(a); fl.appendChild(li);
     });
     $('#year').textContent = num(new Date().getFullYear());
     $('#footerLockup').innerHTML = '<img src="assets/brand/tada-wordmark-tagline_purple.svg" alt="" width="240" height="177">';
@@ -124,7 +124,7 @@
         lab.innerHTML = `<div class="pack-grid"><svg class="pouch" viewBox="0 0 320 440" aria-hidden="true"></svg><div class="pack-text">
           <h3 class="label-name"></h3><p class="label-sub"></p>
           <dl class="specs"></dl><p class="pack-note flag"></p><div class="rulers"></div>
-          <p class="pack-cta"><a class="link" href="${SITE.shop}" rel="noopener"></a></p></div></div>`;
+          <p class="pack-cta"><a class="glass" href="${SITE.shop}" rel="noopener"></a></p></div></div>`;
         $('.label-name', lab).textContent = p.title;
         $('.label-sub', lab).textContent = p.size;
         $('.pack-note', lab).textContent = p.profileFlag;
@@ -450,12 +450,28 @@
   // ---------- one pattern sheet for the whole page ----------
   // Every section carries the same faint shippo sheet, and each sheet is shifted so its
   // tiles sit on one page-wide grid: across section edges and through the pinned scenes
-  // the pattern runs on as a single piece. With a mouse the sheet drifts a little slower
-  // than the page, for depth. Under the mouse a halo wakes the pattern, and a slower halo
+  // the pattern runs on as a single piece. The grid is the one the pen draws in the story:
+  // same circle size, and anchored on the drawn lattice, so where the magic draws the
+  // pattern it lands exactly on the faint one. Under the mouse a halo wakes the pattern, and a slower halo
   // trails behind so the place the cursor left fades out gently; the halo is one shape in
   // screen space, drawn into every section it touches, so it crosses edges unbroken.
   const FIELD_HOSTS = ['#heroStage', '#story', '#menu', '#branches', '#collab', '#footer'];
-  const TILE = 72, DRIFT = fine && !reduce ? 0.8 : 1, PX = 1 / Math.min(devicePixelRatio || 1, 2);
+  const $story = $('#story');
+  // the light inside the glass controls follows the pointer
+  if (fine) addEventListener('pointermove', e => {
+    const gl = e.target.closest && e.target.closest('.glass'); if (!gl) return;
+    const r = gl.getBoundingClientRect();
+    gl.style.setProperty('--gx', (e.clientX - r.left).toFixed(0) + 'px'); gl.style.setProperty('--gy', (e.clientY - r.top).toFixed(0) + 'px');
+  }, { passive: true });
+  const PX = 1 / Math.min(devicePixelRatio || 1, 2);
+  // the grid: tile size and one tile corner (a circle centre) in story coordinates; set by buildRoute
+  const grid = { T: 72, ox: 0, oy: 0, set: false };
+  function setGrid(T, ox, oy) {
+    grid.T = T; grid.ox = ox; grid.oy = oy; grid.set = true;
+    document.documentElement.style.setProperty('--tile', T.toFixed(2) + 'px');
+    const fx = (((ox % T) + T) % T).toFixed(2) + 'px';
+    for (const f of fields) { f.sheet.style.backgroundPositionX = fx; if (f.aura) f.aura.style.setProperty('--fx', fx); f.t = -1; }
+  }
   const halo = { ax: 0, ay: 0, bx: 0, by: 0, o: 0, seen: false };
   let fields = [], auraMoved = 0, hasAura = false;
   function buildField() {
@@ -468,9 +484,10 @@
       let aura = null;
       if (hasAura) { aura = document.createElement('i'); aura.className = 'bg-aura'; box.append(aura); }
       host.prepend(box);
-      return { host, sheet, aura, t: -1, vis: false, max: sel === '#heroStage' ? 0.34 : 0.46 };
+      return { host, sheet, aura, t: -1, vis: false, max: sel === '#heroStage' ? 0.2 : 0.24 };   // faint: text stays easy to read
     }).filter(Boolean);
     if (hasAura) addEventListener('pointermove', e => { if (e.pointerType === 'mouse') auraMoved = performance.now(); }, { passive: true });
+    if (grid.set) setGrid(grid.T, grid.ox, grid.oy);
   }
   function fieldStep(dt, now) {
     if (!fields.length) return;
@@ -487,12 +504,13 @@
       if (h.o < 0.004 && !mouse.on) h.seen = false;
     }
     const lit = hasAura && h.o >= 0.004, hy0 = Math.min(h.ay - 200, h.by - 340), hy1 = Math.max(h.ay + 200, h.by + 340);
-    const g = DRIFT * scrollY;
+    // the anchor: where the drawn lattice's first circle centre is on screen right now
+    const TILE = grid.T, anchor = (grid.set ? $story.getBoundingClientRect().top : -scrollY) + grid.oy;
     for (const f of fields) {
       const r = f.host.getBoundingClientRect();
       if (r.bottom < 0 || r.top > innerHeight) { if (f.vis) { f.aura.style.opacity = 0; f.vis = false; } continue; }
-      // the shift that puts this sheet's tiles on the page grid
-      let t = ((TILE - r.top - g) % TILE + TILE) % TILE;
+      // the shift that puts this sheet's tile corners on the anchor's grid
+      let t = (((anchor - r.top) % TILE) + TILE) % TILE;
       t = Math.round(t / PX) * PX;
       if (t !== f.t) {
         f.t = t; const tf = `translate3d(0,${t}px,0)`;
@@ -940,6 +958,7 @@
       const hr = host.getBoundingClientRect(); sizeSvg(svg, hr.width, hr.height);
       const lr = rel(lat.getBoundingClientRect(), hr);
       const y0 = lr.y + rr;                           // row 0 centre line
+      setGrid(2 * rr, xs + rr, y0);                   // the faint sheet everywhere takes this lattice's grid
       const pen = makePen(svg, xs, 0, 'S', sgn);
       pen.line(y0);
       pen.lattice(rows, n, rr, (latH * 1.7 + 160) * 2.6);   // slow and calm: the pattern takes its time
@@ -1481,33 +1500,60 @@
     }
     return Promise.all(jobs);
   }
-  // The entrance: the star breathes, a bar of light fills as the site loads, then the
-  // site opens by itself. Browsers keep sound off until the first tap or click, so the
-  // TADA notes join from the visitor's first touch.
+  // The entrance: the star breathes and a bar of light fills as the site loads, each
+  // stretch of it with a soft note. Browsers keep sound off until the visitor touches the
+  // page, unless they already allow this site: then it all plays and the site opens by
+  // itself. Otherwise, once the light is full, the gate asks for one touch (or click, or
+  // key), and that touch opens the site with its sound.
   function entrance() {
     return new Promise(resolve => {
       const g = $('#ldGate');
       if (!g) { resolve(); return; }
-      const barBox = $('.ld-gate-bar', g), bar = $('i', barBox);
+      const barBox = $('.ld-gate-bar', g), bar = $('i', barBox), label = $('.ld-gate-label', g);
       $('.ld-gate-star', g).innerHTML = `<svg viewBox="${LOW.cx - LOW.r} ${LOW.cy - LOW.r} ${2 * LOW.r} ${2 * LOW.r}"><path d="${LOW.d}"/></svg>`;
       const lockWas = document.documentElement.style.overflow;
       document.documentElement.style.overflow = 'hidden';
+      let heard = false, waiting = false, done = false, notes = 0;
+      SND.probe().then(ok => { if (ok) heard = true; });
       const shown = { v: 0 };
       const render = () => {
         bar.style.transform = `scaleX(${shown.v})`;
         barBox.style.setProperty('--p', shown.v.toFixed(4));
         barBox.setAttribute('aria-valuenow', Math.round(shown.v * 100));
+        while (heard && SND.enabled() && notes < 4 && shown.v >= 0.18 + notes * 0.24) sfx.gateNote(notes++);
+      };
+      const open = () => {
+        if (done) return; done = true;
+        removeEventListener('click', onGesture, true); removeEventListener('keydown', onGesture, true);
+        if (SND.enabled()) sfx.gateOpen();
+        document.documentElement.style.overflow = lockWas;
+        g.classList.remove('is-waiting'); g.removeAttribute('role'); g.removeAttribute('tabindex');
+        gsap.to(g, { opacity: 0, duration: 0.55, delay: 0.12, ease: 'power2.inOut', onComplete: () => g.remove() });
+        setTimeout(resolve, 240);
+      };
+      function onGesture(e) {
+        if (e.type === 'keydown' && (e.metaKey || e.ctrlKey || e.altKey || e.key === 'Tab' || e.key === 'Shift')) return;
+        SND.unlock(); heard = true;
+        if (waiting) { e.preventDefault(); open(); }
+      }
+      addEventListener('click', onGesture, true); addEventListener('keydown', onGesture, true);
+      const ask = () => {
+        if (heard || !SND.enabled()) { open(); return; }
+        waiting = true;
+        const t = T().gate, text = fine ? t.enterClick : t.enterTouch;
+        g.setAttribute('role', 'button'); g.tabIndex = 0; g.setAttribute('aria-label', text);
+        gsap.to(label, { opacity: 0, duration: 0.3, ease: 'power1.in', onComplete: () => {
+          label.textContent = text; g.classList.add('is-waiting');
+          gsap.fromTo(label, { opacity: 0 }, { opacity: 0.92, duration: 0.6, ease: 'power1.out', clearProps: 'opacity' });
+        } });
+        g.focus({ preventScroll: true });
       };
       const t0 = performance.now();
       let target = 0;
       preload(f => { if (f > target) { target = f; gsap.to(shown, { v: target * 0.94, duration: 0.45, ease: 'power2.out', overwrite: true, onUpdate: render }); } })
         .then(() => {
           const wait = Math.max(0, 500 - (performance.now() - t0)) / 1000;   // never a flash
-          gsap.to(shown, { v: 1, duration: 0.4, delay: wait, ease: 'power2.inOut', overwrite: true, onUpdate: render, onComplete: () => {
-            document.documentElement.style.overflow = lockWas;
-            gsap.to(g, { opacity: 0, duration: 0.55, delay: 0.12, ease: 'power2.inOut', onComplete: () => g.remove() });
-            setTimeout(resolve, 240);
-          } });
+          gsap.to(shown, { v: 1, duration: 0.4, delay: wait, ease: 'power2.inOut', overwrite: true, onUpdate: render, onComplete: () => setTimeout(ask, 120) });
         });
     });
   }

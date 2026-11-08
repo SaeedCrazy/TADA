@@ -386,19 +386,19 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
    page-wide grid, so the pattern runs on across section edges as a single piece. The
    halo under the mouse is one shape in screen space, drawn into each section it touches. */
 .bg-field { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; }
-.bg-sheet, .bg-aura { position: absolute; left: 0; right: 0; top: -72px; bottom: 0; will-change: transform;
-  background: url("../assets/brand/tada-pattern-tile_purple.svg") 0 0 / 72px 72px repeat; }
+.bg-sheet, .bg-aura { position: absolute; left: 0; right: 0; top: calc(-1 * var(--tile, 72px)); bottom: 0; will-change: transform;
+  background: url("../assets/brand/tada-pattern-tile_purple.svg") 0 0 / var(--tile, 72px) var(--tile, 72px) repeat; }
 .bg-sheet { opacity: .034; }
 .hero .bg-sheet { background-image: url("../assets/brand/tada-pattern-tile_white.svg"); opacity: .028; }
 .bg-aura { opacity: 0;
-  background: radial-gradient(240px circle at var(--ax, -999px) var(--ay, -999px), rgba(146, 109, 143, .22), rgba(146, 109, 143, 0) 70%),
-              url("../assets/brand/tada-pattern-tile_purple.svg") 0 0 / 72px 72px repeat;
+  background: radial-gradient(240px circle at var(--ax, -999px) var(--ay, -999px), rgba(146, 109, 143, .1), rgba(146, 109, 143, 0) 70%),
+              url("../assets/brand/tada-pattern-tile_purple.svg") var(--fx, 0) 0 / var(--tile, 72px) var(--tile, 72px) repeat;
   -webkit-mask-image: radial-gradient(170px circle at var(--ax, -999px) var(--ay, -999px), #000 0%, rgba(0, 0, 0, .55) 50%, transparent 100%),
                       radial-gradient(320px circle at var(--bx, -999px) var(--by, -999px), rgba(0, 0, 0, .42) 0%, transparent 100%);
           mask-image: radial-gradient(170px circle at var(--ax, -999px) var(--ay, -999px), #000 0%, rgba(0, 0, 0, .55) 50%, transparent 100%),
                       radial-gradient(320px circle at var(--bx, -999px) var(--by, -999px), rgba(0, 0, 0, .42) 0%, transparent 100%); }
-.hero .bg-aura { background: radial-gradient(240px circle at var(--ax, -999px) var(--ay, -999px), rgba(201, 179, 207, .2), rgba(201, 179, 207, 0) 70%),
-                             url("../assets/brand/tada-pattern-tile_white.svg") 0 0 / 72px 72px repeat; }
+.hero .bg-aura { background: radial-gradient(240px circle at var(--ax, -999px) var(--ay, -999px), rgba(201, 179, 207, .1), rgba(201, 179, 207, 0) 70%),
+                             url("../assets/brand/tada-pattern-tile_white.svg") var(--fx, 0) 0 / var(--tile, 72px) var(--tile, 72px) repeat; }
 
 /* ---------- phones and tablets: smooth first ---------- */
 @media (hover: none), (pointer: coarse) {
@@ -410,3 +410,60 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
   .label-corner svg { filter: none; }
 }
 @media (max-width: 600px) { .skip-link { display: none; } }
+
+/* ---------- liquid glass: TADA's controls ----------
+   Clear glass with a bright rim and a soft lilac depth; the light inside follows the
+   pointer, and a slow sheen crosses it when it wakes. Light and night versions. */
+.glass { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: .5em;
+  min-height: 44px; padding: 0 1.25em; border: 0; border-radius: 999px; cursor: pointer;
+  font: var(--w-regular) var(--fs-small)/1 var(--font); color: var(--night-purple); text-decoration: none; opacity: 1;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .62) 0%, rgba(255, 255, 255, .22) 55%, rgba(201, 179, 207, .26) 100%);
+  -webkit-backdrop-filter: blur(16px) saturate(1.7); backdrop-filter: blur(16px) saturate(1.7);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .95), inset 0 -2px 6px rgba(201, 179, 207, .35), inset 0 0 0 1px rgba(255, 255, 255, .28),
+              0 8px 22px -10px rgba(53, 8, 76, .38), 0 1px 3px rgba(53, 8, 76, .1);
+  transition: transform .6s var(--ease-out), box-shadow .6s var(--ease-out), background .6s var(--ease-out); }
+/* the rim: a thin edge of light, brighter where the light falls */
+.glass::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(140deg, rgba(255, 255, 255, .95), rgba(201, 179, 207, .3) 38%, rgba(146, 109, 143, .25) 62%, rgba(255, 255, 255, .8));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; }
+/* the light inside: follows the pointer; a sheen crosses on hover */
+.glass::after { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; opacity: 0;
+  background: radial-gradient(90px circle at var(--gx, 50%) var(--gy, 0%), rgba(255, 255, 255, .75), rgba(255, 255, 255, 0) 70%),
+              linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, .55) 48%, transparent 66%) no-repeat;
+  background-size: 100% 100%, 250% 100%; background-position: 0 0, 150% 0;
+  transition: opacity .6s var(--ease-out), background-position 1.4s var(--ease-out); }
+.glass:hover::after, .glass:focus-visible::after { opacity: 1; background-position: 0 0, -50% 0; }
+.glass:hover { box-shadow: inset 0 1px 1px rgba(255, 255, 255, 1), inset 0 -2px 8px rgba(201, 179, 207, .45), inset 0 0 0 1px rgba(255, 255, 255, .4),
+               0 0 0 1px rgba(201, 179, 207, .35), 0 12px 30px -10px rgba(102, 36, 130, .45), 0 0 26px -6px rgba(201, 179, 207, .7); }
+.glass:active { transform: scale(.965); transition-duration: .18s; }
+.glass:focus-visible { outline: 2px solid var(--focus, var(--tada-purple)); outline-offset: 3px; }
+/* night glass: on the dark surfaces and the dark nav */
+.nav[data-ink="light"] .glass, [data-surface="dark"] .glass, .mmenu .glass { color: var(--lilac-mist);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .2) 0%, rgba(255, 255, 255, .06) 55%, rgba(201, 179, 207, .12) 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .45), inset 0 -2px 6px rgba(201, 179, 207, .18), inset 0 0 0 1px rgba(255, 255, 255, .12),
+              0 8px 22px -10px rgba(0, 0, 0, .55); }
+.nav[data-ink="light"] .glass::before, [data-surface="dark"] .glass::before, .mmenu .glass::before {
+  background: linear-gradient(140deg, rgba(255, 255, 255, .7), rgba(201, 179, 207, .2) 40%, rgba(146, 109, 143, .15) 62%, rgba(255, 255, 255, .45)); }
+.nav[data-ink="light"] .glass::after, [data-surface="dark"] .glass::after, .mmenu .glass::after {
+  background: radial-gradient(90px circle at var(--gx, 50%) var(--gy, 0%), rgba(201, 179, 207, .45), rgba(201, 179, 207, 0) 70%),
+              linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, .28) 48%, transparent 66%) no-repeat;
+  background-size: 100% 100%, 250% 100%; background-position: 0 0, 150% 0; }
+.nav[data-ink="light"] .glass:hover::after, [data-surface="dark"] .glass:hover::after, .mmenu .glass:hover::after { background-position: 0 0, -50% 0; }
+.nav[data-ink="light"] .glass:hover, [data-surface="dark"] .glass:hover, .mmenu .glass:hover {
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .6), inset 0 0 0 1px rgba(255, 255, 255, .2), 0 0 0 1px rgba(201, 179, 207, .3), 0 0 28px -6px rgba(201, 179, 207, .6); }
+/* in the nav: compact */
+.nav .glass { min-height: 38px; padding: 0 1em; }
+.nav .glass::after { inset: 0; }
+.nav-sound.glass[aria-pressed="false"], .mmenu-sound.glass[aria-pressed="false"] { opacity: .7; }
+.glass.nav-lang, .glass.mmenu-lang { font-family: var(--font-en); font-weight: 500; }
+html[lang="en"] .glass.nav-lang, html[lang="en"] .glass.mmenu-lang { font-family: var(--font-fa); }
+.footer-links { gap: var(--s-4); }
+.pack-cta .glass { min-height: 40px; }
+.nav-menu-btn.glass { display: none; }
+@media (max-width: 600px) { .nav-sound.glass { display: none; } }
+@media (max-width: 600px) { .nav-menu-btn.glass { display: inline-flex; } }
+@media (hover: none), (pointer: coarse) {
+  /* glass stays light on phones: a small blur only on these few pills */
+  .glass { -webkit-backdrop-filter: blur(10px) saturate(1.5); backdrop-filter: blur(10px) saturate(1.5); }
+}

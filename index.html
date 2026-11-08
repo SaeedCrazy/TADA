@@ -42,14 +42,8 @@
        allow no audio before a gesture, so this tap is what lets the intro be heard. -->
   <div class="ld-gate" id="ldGate">
     <div class="ld-gate-star" aria-hidden="true"></div>
-    <p class="ld-gate-label" data-t="gate.loading">آماده‌سازی تادا</p>
-    <div class="ld-gate-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
-    <p class="ld-gate-pct" aria-hidden="true">۰٪</p>
-    <div class="ld-gate-actions" hidden>
-      <button class="ld-enter" type="button" data-t="gate.sound" data-sfx="none">ورود با صدا</button>
-      <button class="ld-enter-quiet" type="button" data-t="gate.quiet" data-sfx="none">ورود بی‌صدا</button>
-      <p class="ld-gate-note" data-t="gate.note">جادوی تادا با صدا کامل می‌شود.</p>
-    </div>
+    <div class="ld-gate-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="ldGateLabel"><i></i><b aria-hidden="true"></b></div>
+    <p class="ld-gate-label" id="ldGateLabel" data-t="gate.loading">در حال آماده‌سازی…</p>
   </div>
   <button class="ld-sound sound-toggle" type="button" aria-pressed="true" data-sfx="none">صدا: روشن</button>
   <button class="ld-skip" type="button" data-t="skip">رد کردن</button>
@@ -127,13 +121,13 @@
     <div class="container menu-head">
       <h2 class="h2" data-t="menu.title"></h2>
       <p class="lead" data-t="menu.lead"></p>
+      <div class="menu-dots" id="menuDots" aria-hidden="true"></div>
     </div>
     <div class="menu-stage" id="menuStage">
       <div class="menu-track" id="menuTrack">
         <svg class="ink ink-track" data-ink="menu-track" aria-hidden="true"></svg>
       </div>
     </div>
-    <div class="menu-dots" id="menuDots" aria-hidden="true"></div>
     <svg class="ink" data-ink="menu" aria-hidden="true"></svg>
   </section>
 

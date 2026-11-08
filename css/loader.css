@@ -62,39 +62,27 @@
   .ld-edge { display: none; }
 }
 
-/* The entrance gate ------------------------------------------------------- */
+/* The entrance: the star, a bar of light that fills, one line of text ----- */
 .ld-gate {
   position: absolute; inset: 0; z-index: 3;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
   background: var(--night-deep); color: var(--lilac-mist);
   pointer-events: auto; text-align: center; padding: 24px;
 }
 .ld-gate ~ .ld-sound, .ld-gate ~ .ld-skip { visibility: hidden; }
-.ld-gate-star { width: 34px; height: 34px; margin-bottom: 6px; filter: drop-shadow(0 0 10px rgba(201, 179, 207, .55)); animation: gate-breathe 2.8s var(--ease-out, ease-out) infinite; }
+.ld-gate-star { width: 30px; height: 30px; filter: drop-shadow(0 0 12px rgba(201, 179, 207, .6)); animation: gate-breathe 2.6s ease-in-out infinite; }
 .ld-gate-star svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .ld-gate-star path { fill: currentColor; }
-@keyframes gate-breathe { 0%, 100% { transform: scale(.88) rotate(0deg); opacity: .75; } 50% { transform: scale(1.08) rotate(12deg); opacity: 1; } }
-.ld-gate-label { margin: 0; font: 400 13px/1.6 var(--font-fa); letter-spacing: .02em; opacity: .7; }
-.ld-gate-bar { width: min(180px, 50vw); height: 1px; background: rgba(201, 179, 207, .22); overflow: hidden; }
-.ld-gate-bar i { display: block; height: 100%; background: var(--lilac-mist); transform: scaleX(0); transform-origin: right center; box-shadow: 0 0 8px var(--lilac-mist); }
+@keyframes gate-breathe { 0%, 100% { transform: scale(.9) rotate(0deg); opacity: .8; } 50% { transform: scale(1.06) rotate(10deg); opacity: 1; } }
+.ld-gate-bar { position: relative; width: min(200px, 56vw); height: 2px; border-radius: 2px; background: rgba(201, 179, 207, .18); }
+.ld-gate-bar i { position: absolute; inset: 0; border-radius: inherit; transform: scaleX(0); transform-origin: right center;
+  background: linear-gradient(270deg, rgba(201, 179, 207, .5), #FFFFFF 70%, rgba(255, 255, 255, .9));
+  box-shadow: 0 0 10px rgba(201, 179, 207, .8), 0 0 22px rgba(146, 109, 143, .5); }
+/* a spark rides the tip of the light */
+.ld-gate-bar b { position: absolute; top: 50%; right: calc(var(--p, 0) * 100%); width: 7px; height: 7px; margin: -3.5px -3.5px 0 0; border-radius: 50%;
+  background: #FFFFFF; box-shadow: 0 0 8px 2px rgba(255, 255, 255, .85), 0 0 18px 4px rgba(201, 179, 207, .6); }
 [dir="ltr"] .ld-gate-bar i { transform-origin: left center; }
-.ld-gate-pct { margin: 0; font: 300 12px/1 var(--font-fa); opacity: .55; font-variant-numeric: tabular-nums; min-width: 4ch; }
-.ld-gate-actions { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 10px; }
-.ld-gate-actions[hidden] { display: none; }
-.ld-gate.is-ready .ld-gate-label, .ld-gate.is-ready .ld-gate-pct { display: none; }
-.ld-enter {
-  font: 500 16px/1 var(--font-fa); color: var(--night-deep); background: var(--lilac-mist);
-  border: 0; border-radius: 999px; padding: 16px 34px; min-height: 48px; cursor: pointer;
-  box-shadow: 0 0 0 0 rgba(239, 233, 242, .5), 0 0 24px rgba(201, 179, 207, .35);
-  transition: transform .5s var(--ease-out, ease-out), box-shadow .5s var(--ease-out, ease-out);
-}
-.ld-enter:hover { transform: translateY(-1px) scale(1.02); box-shadow: 0 0 0 6px rgba(239, 233, 242, .08), 0 0 34px rgba(201, 179, 207, .55); }
-.ld-enter-quiet {
-  font: 400 14px/1 var(--font-fa); color: var(--lilac-mist); background: none; border: 0;
-  border-bottom: 1px solid rgba(239, 233, 242, .4); padding: 10px 2px; min-height: 44px; cursor: pointer; opacity: .75;
-}
-.ld-enter-quiet:hover { opacity: 1; }
-.ld-enter:focus-visible, .ld-enter-quiet:focus-visible { outline: 2px solid var(--lilac); outline-offset: 4px; }
-.ld-gate-note { margin: 4px 0 0; font: 300 12px/1.6 var(--font-fa); opacity: .5; }
-[lang="en"] .ld-gate, [lang="en"] .ld-enter, [lang="en"] .ld-enter-quiet { font-family: var(--font-en, inherit); }
+[dir="ltr"] .ld-gate-bar b { right: auto; left: calc(var(--p, 0) * 100%); margin: -3.5px 0 0 -3.5px; }
+.ld-gate-label { margin: 0; font: 300 13px/1.6 var(--font-fa); letter-spacing: .02em; opacity: .72; }
+[lang="en"] .ld-gate-label { font-family: var(--font-en, inherit); }
 @media (prefers-reduced-motion: reduce) { .ld-gate-star { animation: none; } }

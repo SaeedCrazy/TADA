@@ -180,7 +180,7 @@ html[lang="en"] .nav-lang { font-family: var(--font-fa); }
 
 /* ---------- phone menu ---------- */
 .mmenu { position: fixed; inset: 0; z-index: 70; display: flex; flex-direction: column; padding: 0 clamp(20px, 7vw, 40px) max(28px, env(safe-area-inset-bottom));
-  background: var(--night-purple); color: var(--lilac-mist); overflow-y: auto; }
+  background: var(--night-purple); color: var(--lilac-mist); overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
 .mmenu[hidden] { display: none; }
 .mmenu::before { content: ""; position: absolute; inset: 0; background: url("../assets/brand/tada-pattern-tile_white.svg") center / 72px repeat; opacity: .045; pointer-events: none; }
 .mmenu-head { position: relative; height: var(--nav-h); display: flex; align-items: center; justify-content: space-between; }
@@ -200,7 +200,7 @@ html[lang="en"] .mmenu-lang { font-family: var(--font-fa); }
 @media (min-width: 601px) { .mmenu { display: none !important; } }
 
 /* ---------- menu progress: one shippo ring per label ---------- */
-.menu-dots { position: absolute; z-index: 3; left: 50%; bottom: clamp(14px, 3.2vh, 30px); transform: translateX(-50%); display: flex; gap: 8px; }
+.menu-dots { display: flex; gap: 8px; margin-top: var(--s-4); }
 .menu-dots i { display: block; width: 9px; height: 9px; border: 1px solid var(--tada-purple); border-radius: 50%; opacity: .5; transition: background-color var(--t-base) var(--ease-out), opacity var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out); }
 .menu-dots i.is-on { background: var(--tada-purple); opacity: 1; transform: scale(1.25); }
 
@@ -372,9 +372,9 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
 }
 
 /* ---------- quiet brand motifs: shippo cloud and hollow kit sparkles, very faint ---------- */
-.story, .branches, .collab { isolation: isolate; }
+.story, .branches, .collab, .menu, .footer { isolation: isolate; }
 .bg-motif { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; }
-.hero-stage > .bg-motif { z-index: 0; }
+.hero-stage > .bg-motif, .hero-stage > .bg-aura { z-index: 0; }
 .motif-layer { position: absolute; display: block; width: var(--s); height: var(--s); margin: calc(var(--s) / -2); }
 .motif-cloud { background: url("../assets/brand/tada-pattern-tile_purple.svg") center / 64px repeat; opacity: .075;
   -webkit-mask-image: radial-gradient(closest-side, #000 0%, rgba(0, 0, 0, .55) 45%, transparent 100%); mask-image: radial-gradient(closest-side, #000 0%, rgba(0, 0, 0, .55) 45%, transparent 100%); }
@@ -384,3 +384,25 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
 @keyframes motif-sway { from { transform: rotate(-7deg) scale(.97); } to { transform: rotate(7deg) scale(1.03); } }
 @media (max-width: 600px) { .motif-star:nth-child(n+3) { display: none; } .motif-layer { width: calc(var(--s) * .7); height: calc(var(--s) * .7); margin: calc(var(--s) * -.35); } }
 @media (prefers-reduced-motion: reduce) { .motif-star svg { animation: none; } }
+
+/* ---------- the cursor wakes the pattern (mouse only; positions set by main.js) ---------- */
+.bg-aura { position: absolute; inset: 0; pointer-events: none; z-index: -1; opacity: 0;
+  background: radial-gradient(240px circle at var(--ax, -999px) var(--ay, -999px), rgba(146, 109, 143, .22), rgba(146, 109, 143, 0) 70%),
+              url("../assets/brand/tada-pattern-tile_purple.svg") 0 0 / 72px 72px repeat;
+  -webkit-mask-image: radial-gradient(170px circle at var(--ax, -999px) var(--ay, -999px), #000 0%, rgba(0, 0, 0, .55) 50%, transparent 100%),
+                      radial-gradient(320px circle at var(--bx, -999px) var(--by, -999px), rgba(0, 0, 0, .42) 0%, transparent 100%);
+          mask-image: radial-gradient(170px circle at var(--ax, -999px) var(--ay, -999px), #000 0%, rgba(0, 0, 0, .55) 50%, transparent 100%),
+                      radial-gradient(320px circle at var(--bx, -999px) var(--by, -999px), rgba(0, 0, 0, .42) 0%, transparent 100%); }
+.hero .bg-aura { background: radial-gradient(240px circle at var(--ax, -999px) var(--ay, -999px), rgba(201, 179, 207, .2), rgba(201, 179, 207, 0) 70%),
+                             url("../assets/brand/tada-pattern-tile_white.svg") 0 0 / 72px 72px repeat; }
+
+/* ---------- phones and tablets: smooth first ---------- */
+@media (hover: none), (pointer: coarse) {
+  .grain { display: none; }                                   /* a fixed full-screen noise layer costs every frame */
+  .nav.is-scrolled[data-ink="dark"]  { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(239, 233, 242, .95); }
+  .nav.is-scrolled[data-ink="light"] { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(53, 8, 76, .92); }
+  .motif-star svg { animation: none; }
+  .skip-link { display: none; }
+  .label-corner svg { filter: none; }
+}
+@media (max-width: 600px) { .skip-link { display: none; } }

@@ -23,6 +23,7 @@
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const small = () => innerWidth < 768;
+  const fine = matchMedia('(pointer: fine)').matches;   // a mouse: the costly extras are for it only
   const vh = () => innerHeight;
   gsap.registerPlugin(ScrollTrigger);
   ScrollTrigger.config({ ignoreMobileResize: true });
@@ -343,7 +344,7 @@
   const dust = $('#magicDust'), ctx = dust.getContext('2d');
   const starPath = new Path2D(LOW.d);
   let dpr = 1, particles = [];
-  function sizeDust() { const de = document.documentElement; dpr = Math.min(2, devicePixelRatio || 1); dust.width = Math.round(de.clientWidth * dpr); dust.height = Math.round(de.clientHeight * dpr); }
+  function sizeDust() { const de = document.documentElement; dpr = Math.min(fine ? 2 : 1.5, devicePixelRatio || 1); dust.width = Math.round(de.clientWidth * dpr); dust.height = Math.round(de.clientHeight * dpr); }
   sizeDust();
   // el: the path a particle belongs to (it then scrolls with the page); null = screen space
   function spawn(elm, lx, ly, dark, burst = 1, o = {}) {
@@ -413,18 +414,77 @@
     lab.classList.toggle('is-framed', on);
     if (reduce) { gsap.set(rect, { strokeDashoffset: on ? 0 : 1 }); gsap.set(corners, { scale: on ? 1 : 0, opacity: on ? 1 : 0 }); return; }
     const tl = lab.__ftl = gsap.timeline();
+    // slow and calm: the frame draws, the label lifts with a sweep of light, settles
+    const lift = fine ? { y: -12, scale: 1.025, boxShadow: '0 48px 90px -34px rgba(53, 8, 76, .5), 0 0 0 1px rgba(102, 36, 130, .2)' } : { y: -8, scale: 1.02 };
+    const rest = fine ? { y: 0, scale: 1, boxShadow: restShadow } : { y: 0, scale: 1 };
     if (on) {
-      tl.to(rect, { strokeDashoffset: 0, duration: 1.1, ease: 'power2.inOut' }, 0)
-        .to(lab, { y: -14, scale: 1.03, boxShadow: '0 48px 90px -34px rgba(53, 8, 76, .55), 0 0 0 1px rgba(102, 36, 130, .2)', duration: 0.55, ease: 'power3.out' }, 0.05)
-        .fromTo(sheen, { xPercent: -140, opacity: 1 }, { xPercent: 260, duration: 1.15, ease: 'power2.inOut' }, 0.12)
-        .fromTo(corners, { scale: 0, rotation: -60, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.55, stagger: 0.08, ease: 'back.out(3)' }, 0.5)
-        .add(() => { const fr = $('.label-frame', lab); spawn(fr, 0, 0, false, 5, { radial: true, speed: 30, spread: 2, life: 0.6, rise: 0 }); }, 0.55)
-        .to(lab, { y: 0, scale: 1, boxShadow: restShadow, duration: 0.95, ease: 'power3.inOut' }, 0.78);
+      tl.to(rect, { strokeDashoffset: 0, duration: 1.9, ease: 'power2.inOut' }, 0)
+        .to(lab, { ...lift, duration: 1.0, ease: 'power2.out' }, 0.15)
+        .fromTo(sheen, { xPercent: -140, opacity: 1 }, { xPercent: 260, duration: 1.9, ease: 'power1.inOut' }, 0.25)
+        .fromTo(corners, { scale: 0, rotation: -45, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.9, stagger: 0.14, ease: 'back.out(2)' }, 1.0)
+        .add(() => { const fr = $('.label-frame', lab); spawn(fr, 0, 0, false, fine ? 4 : 2, { radial: true, speed: 18, spread: 2, life: 0.9, rise: 0 }); }, 1.05)
+        .to(lab, { ...rest, duration: 1.5, ease: 'power2.inOut' }, 1.4);
     } else {
-      tl.to(corners, { scale: 0, opacity: 0, duration: 0.25, ease: 'power2.in' }, 0)
-        .to(rect, { strokeDashoffset: 1, duration: 0.5, ease: 'power2.in' }, 0)
-        .to(lab, { y: 0, scale: 1, duration: 0.4 }, 0)
+      tl.to(corners, { scale: 0, opacity: 0, duration: 0.4, ease: 'power2.in' }, 0)
+        .to(rect, { strokeDashoffset: 1, duration: 0.8, ease: 'power2.inOut' }, 0)
+        .to(lab, { y: 0, scale: 1, duration: 0.6 }, 0)
         .set(lab, { clearProps: 'boxShadow' });
+    }
+  }
+  // the pen has passed the label and the label is fully on screen: only then it is framed
+  function checkLabels() {
+    const vw = document.documentElement.clientWidth, H = innerHeight;
+    for (const lab of document.querySelectorAll('#menuTrack .label')) {
+      const want = !!lab.__want;
+      if (want === !!lab.__shown) continue;
+      if (want) {
+        const r = lab.getBoundingClientRect();
+        if (r.left < -2 || r.right > vw + 2 || r.top < 0 || r.bottom > H) continue;
+      }
+      lab.__shown = want;
+      frameLabel(lab, want);
+      if (want) sfx.tile(lab.__i || 0);
+    }
+  }
+
+  // ---------- the cursor wakes the pattern ----------
+  // Under the mouse, the shippo pattern of the section lights up in a soft halo; a second,
+  // slower halo trails behind, so the place the cursor left fades out gently.
+  const AURA_HOSTS = ['#heroStage', '#story', '#menu', '#branches', '#collab', '#footer'];
+  let auras = [], auraMoved = 0;
+  function buildAuras() {
+    if (reduce || !fine) return;
+    auras = AURA_HOSTS.map(sel => {
+      const host = $(sel); if (!host) return null;
+      const n = document.createElement('div');
+      n.className = 'bg-aura'; n.setAttribute('aria-hidden', 'true');
+      host.prepend(n);
+      return { host, n, ax: 0, ay: 0, bx: 0, by: 0, o: 0, seen: false, vis: false, max: sel === '#heroStage' ? 0.34 : 0.46 };
+    }).filter(Boolean);
+    addEventListener('pointermove', e => { if (e.pointerType === 'mouse') auraMoved = performance.now(); }, { passive: true });
+  }
+  function auraStep(dt, now) {
+    if (!auras.length) return;
+    const moving = now - auraMoved < 160;
+    for (const a of auras) {
+      const r = a.host.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) { if (a.vis) { a.n.style.opacity = 0; a.vis = false; a.o = 0; } continue; }
+      const inside = mouse.on && mouse.x >= r.left && mouse.x <= r.right && mouse.y >= r.top && mouse.y <= r.bottom;
+      const tx = mouse.x - r.left, ty = mouse.y - r.top;
+      if (inside) {
+        if (!a.seen) { a.ax = a.bx = tx; a.ay = a.by = ty; a.seen = true; }
+        const k1 = 1 - Math.exp(-dt * 8), k2 = 1 - Math.exp(-dt * 1.4);
+        a.ax += (tx - a.ax) * k1; a.ay += (ty - a.ay) * k1;
+        a.bx += (tx - a.bx) * k2; a.by += (ty - a.by) * k2;
+      }
+      const target = inside ? (moving ? 1 : 0.5) : 0;
+      a.o += (target - a.o) * (1 - Math.exp(-dt * (target > a.o ? 2.6 : 0.65)));   // wakes softly, fades slowly
+      if (a.o < 0.004) { if (a.vis) { a.n.style.opacity = 0; a.vis = false; } if (!inside) a.seen = false; continue; }
+      a.vis = true;
+      const st = a.n.style;
+      st.opacity = (a.o * a.max).toFixed(3);
+      st.setProperty('--ax', a.ax.toFixed(1) + 'px'); st.setProperty('--ay', a.ay.toFixed(1) + 'px');
+      st.setProperty('--bx', a.bx.toFixed(1) + 'px'); st.setProperty('--by', a.by.toFixed(1) + 'px');
     }
   }
 
@@ -583,21 +643,21 @@
   }
   function liveStep(dt, now, M) {
     zoneRects();
-    if (now - live.at > 200) refreshLive(now);
-    const S = small(), maxFlows = S ? 80 : 160;
+    if (now - live.at > (small() ? 420 : 220)) refreshLive(now);
+    const S = small(), maxFlows = S ? 24 : 110;
     // glints: as many as the ink on screen can carry
-    const rate = Math.min(S ? 15 : 28, live.total * (S ? 0.022 : 0.016));
+    const rate = Math.min(S ? 3 : 9, live.total * (S ? 0.004 : 0.007));
     live.acc += dt * rate;
     while (live.acc >= 1) {
       live.acc -= 1;
-      if (live.nG >= (S ? 24 : 44) || !live.src.length) continue;
+      if (live.nG >= (S ? 6 : 20) || !live.src.length) continue;
       live.nG++;
       const elm = pickSource(), L = elm && elm.__live; if (!L) continue;
-      const speed = 55 + Math.random() * 85;
-      flows.push({ k: 'g', el: elm, s: L.a + Math.random() * (L.b - L.a), v: speed / L.sc, life: 0, max: 1.4 + Math.random() * 1.6, trail: [], shed: Math.random() * 0.1, big: Math.random() < 0.22, edge: 0 });
+      const speed = 20 + Math.random() * 24;
+      flows.push({ k: 'g', el: elm, s: L.a + Math.random() * (L.b - L.a), v: speed / L.sc, life: 0, max: 2.6 + Math.random() * 2.2, trail: [], shed: Math.random() * 0.1, big: Math.random() < 0.22, edge: 0 });
     }
     // twinkles on the kit stars and beads
-    live.tacc += dt * (live.tw.length ? (S ? 1.4 : 2.4) : 0);
+    live.tacc += dt * (live.tw.length ? (S ? 0.4 : 0.9) : 0);
     while (live.tacc >= 1) {
       live.tacc -= 1;
       if (!live.tw.length || flows.length >= maxFlows + 12) continue;
@@ -618,53 +678,14 @@
       f.trail.push(pt.x, pt.y); if (f.trail.length > 52) f.trail.splice(0, 2);
       live.nG++;
       f.shed -= dt;
-      if (f.shed <= 0 && flows.length + add.length < maxFlows) {                                 // a mote lifts off the current
-        f.shed = 0.06 + Math.random() * 0.09;
+      if (!S && f.shed <= 0 && flows.length + add.length < maxFlows) {                                 // a mote lifts off the current
+        f.shed = 0.2 + Math.random() * 0.25;
         const a = Math.random() * 6.283, sp = 1.5 + Math.random() * 3.5;
         add.push({ k: 'm', el: f.el, lx: pt.x, ly: pt.y, ox: 0, oy: 0, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.5, r: 0.7 + Math.random() * 0.95, dark: L.dark, life: 0, max: 0.6 + Math.random() * 0.8, hue: Math.random() < 0.5 });
       }
       return true;
     });
     if (add.length) flows.push(...add);
-    // the light tunnel: short bright dashes run inside the companion line, the way the
-    // pen went; near the cursor they brighten, glow and now and then shed a sparkle
-    {
-      const SP = 30, DL = 9, V = 90, inkW = live.inkW;
-      const norm = [new Path2D(), new Path2D()], hot = [new Path2D(), new Path2D()];
-      let anyHot = false;
-      for (const sv of live.src) {
-        const elm = sv.el, L = elm.__live; if (!L || !L.line) continue;
-        const m = M(elm); if (!m) continue;
-        const spL = SP / L.sc, dlL = DL / L.sc, off = ((now / 1000) * V / L.sc) % spL;
-        const PX = q => m.a * q.x + m.c * q.y + m.e, PY = q => m.b * q.x + m.d * q.y + m.f;
-        for (let k = 0; k < 400; k++) {
-          const head = L.dir > 0 ? L.a + off + k * spL : L.b - off - k * spL;
-          if (L.dir > 0 ? head > L.b : head < L.a) break;
-          const h1 = Math.min(L.b, Math.max(L.a, head)), t1 = Math.min(L.b, Math.max(L.a, head - L.dir * dlL));
-          if (Math.abs(h1 - t1) < 0.4) continue;
-          const p0 = pathPt(elm, t1), pm = pathPt(elm, (t1 + h1) / 2), p1 = pathPt(elm, h1);
-          const xm = PX(pm), ym = PY(pm);
-          const isHot = mouse.on && Math.abs(xm - mouse.x) < 150 && Math.abs(ym - mouse.y) < 150 && Math.hypot(xm - mouse.x, ym - mouse.y) < 150;
-          const P = (isHot ? hot : norm)[L.dark ? 1 : 0];
-          P.moveTo(PX(p0), PY(p0)); P.lineTo(xm, ym); P.lineTo(PX(p1), PY(p1));
-          if (isHot) { anyHot = true; if (Math.random() < 0.006) spawn(elm, pm.x, pm.y, L.dark, 1, HUG); }
-        }
-      }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      for (const d of [0, 1]) {
-        ctx.globalCompositeOperation = d ? 'lighter' : 'source-over';
-        ctx.strokeStyle = '#FFFFFF'; ctx.globalAlpha = d ? 0.6 : 0.78; ctx.lineWidth = Math.max(1, inkW * 0.42);
-        ctx.stroke(norm[d]);
-        if (anyHot) {
-          ctx.strokeStyle = d ? '#C9B3CF' : '#926D8F'; ctx.globalAlpha = 0.28; ctx.lineWidth = inkW * 2.8;
-          ctx.stroke(hot[d]);
-          ctx.strokeStyle = '#FFFFFF'; ctx.globalAlpha = 1; ctx.lineWidth = Math.max(1.3, inkW * 0.6);
-          ctx.stroke(hot[d]);
-        }
-      }
-      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-    }
     // draw
     for (const f of flows) {
       const m = M(f.el); if (!m) continue;
@@ -681,8 +702,8 @@
         ctx.strokeStyle = '#FFFFFF';
         for (let i = 1; i < n; i++) {                     // the streak: a pulse of light inside the stroke
           const q = i / (n - 1);
-          ctx.globalAlpha = a * q * (dark ? 0.85 : 0.95);
-          ctx.lineWidth = (f.big ? 3 : 2.2) * (0.3 + 0.7 * q);
+          ctx.globalAlpha = a * q * (dark ? 0.62 : 0.72);
+          ctx.lineWidth = (f.big ? 2.4 : 1.7) * (0.3 + 0.7 * q);
           ctx.beginPath();
           ctx.moveTo(X(tr[2 * i - 2], tr[2 * i - 1]), Y(tr[2 * i - 2], tr[2 * i - 1]));
           ctx.lineTo(X(tr[2 * i], tr[2 * i + 1]), Y(tr[2 * i], tr[2 * i + 1]));
@@ -728,7 +749,9 @@
   let lastT = performance.now();
   function tick() {
     const now = performance.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+    if (siteReady) checkLabels();
     if (!siteReady || reduce) return;
+    auraStep(dt, now);
     // head
     const fr = parked ? null : frontier();
     if (fr && birthDone) {
@@ -826,7 +849,7 @@
     if (reduce) return gsap.to(proxy, { p: 1, duration: 0, paused: true });
     const tw = gsap.to(proxy, {
       p: 1, ease: 'none',
-      scrollTrigger: { trigger: c.host, scrub: 0.6, invalidateOnRefresh: true, ...opts },
+      scrollTrigger: { trigger: c.host, scrub: 1, invalidateOnRefresh: true, ...opts },
       onUpdate: () => { c.raw = proxy.p; resolve(); },
     });
     triggers.push(tw);
@@ -906,7 +929,7 @@
       const y0 = lr.y + rr;                           // row 0 centre line
       const pen = makePen(svg, xs, 0, 'S', sgn);
       pen.line(y0);
-      pen.lattice(rows, n, rr, latH * 1.7 + 160);
+      pen.lattice(rows, n, rr, (latH * 1.7 + 160) * 2.6);   // slow and calm: the pattern takes its time
       runWithBeads(pen, hr.height, [0.55]);
       addChain('story', host, pen);
     }
@@ -954,13 +977,12 @@
         const lit = { on: false };
         pen.shippo(n, D, budgetFor(u, u + n * D), {
           onProgress(f) {
+            it.lab.__want = f >= 0.97; it.lab.__i = i;
             const on = f > 0.5;
             if (on === lit.on) return;
             lit.on = on;
             const band = $('.label-band', it.lab); if (band) band.classList.toggle('is-lit', on);
             tiles.forEach(t => { if (t.classList.contains('pouch-tile')) t.style.opacity = on || reduce ? 1 : 0; });
-            frameLabel(it.lab, on);
-            if (on) sfx.tile(i);
           },
         });
         u += n * D;
@@ -1060,13 +1082,13 @@
 
     menuTween = gsap.to('#menuTrack', {
       x: () => -SGN() * menuTravel(), ease: 'none',
-      scrollTrigger: { trigger: '#menu', start: 'top top', end: () => '+=' + menuTravel(), pin: true, scrub: 0.6, anticipatePin: 1, invalidateOnRefresh: true, onUpdate: st => setDot(st.progress) },
+      scrollTrigger: { trigger: '#menu', start: 'top top', end: () => '+=' + menuTravel(), pin: true, scrub: 1, anticipatePin: 1, invalidateOnRefresh: true, onUpdate: st => setDot(st.progress) },
     });
     triggers.push(menuTween); menuPin = menuTween.scrollTrigger;
     lineTrigger(menuChain, { trigger: '#menu', start: () => menuPin.start - 0.6 * vh(), end: () => menuPin.end + 0.4 * vh() });
     lineTrigger(chains[3], { start: 'top 60%', end: 'bottom 60%' });
     lineTrigger(chains[4], { start: 'top 60%', end: 'bottom 60%' });
-    lineTrigger(chains[5], { start: 'top 60%', end: 'bottom bottom' });
+    lineTrigger(chains[5], { start: 'top 60%', end: () => ScrollTrigger.maxScroll(window) - (small() ? 140 : 8) });
 
     // the nav takes the ink of the surface under it
     triggers.push(gsap.to({}, { scrollTrigger: { trigger: '#story', start: 'top 48px', onEnter: () => ($('#nav').dataset.ink = 'dark'), onLeaveBack: () => ($('#nav').dataset.ink = 'light') } }));
@@ -1164,7 +1186,7 @@
     for (let k = 0; k < 3; k++) el('feMergeNode', { in: 'b' }, merge);
     el('feMergeNode', { in: 'SourceGraphic' }, merge);
     const hs = 126 / VH;
-    const markWrap = el('g', { class: 'sc-mark', filter: 'url(#mark-glow)' }, svg);
+    const markWrap = el('g', fine ? { class: 'sc-mark', filter: 'url(#mark-glow)' } : { class: 'sc-mark' }, svg);
     const mark = el('g', { transform: `translate(${150 - (VW * hs) / 2 - VX * hs} ${314 - (VH * hs) / 2 - VY * hs}) scale(${hs})` }, markWrap);
     const markStrokes = HAND.strokes.map(st => el('path', { class: 'sc sc-markline', d: st.d, 'stroke-width': HAND.stroke }, mark));
     const markStars = HAND.stars.map(st => {
@@ -1208,13 +1230,13 @@
         ];
         parts.forEach(t => { t.totalTime(Math.random() * t.duration() * 2); idle.add(t, 0); });
       });
-      idle.add(gsap.to(blur, { attr: { stdDeviation: 3.4 }, duration: 2.6, ease: 'sine.inOut', yoyo: true, repeat: -1 }), 0);
+      if (fine) idle.add(gsap.to(blur, { attr: { stdDeviation: 3.4 }, duration: 2.6, ease: 'sine.inOut', yoyo: true, repeat: -1 }), 0);
       new IntersectionObserver(([en]) => (en.isIntersecting ? idle.play() : idle.pause())).observe(svg);
     }
     return tl;
   }
 
-  const RANGES = [[0.15, 0.25], [0.35, 0.45], [0.60, 0.70], [0.85, 1.01]];
+  const RANGES = [[0.12, 0.33], [0.35, 0.58], [0.60, 0.83], [0.85, 1.01]];   // each holds until just before the next
   let capShown = -1;
   function heroUpdate(p) {
     if (heroVideo) heroVideo(p);
@@ -1363,7 +1385,7 @@
       if (Math.random() < 0.55) spawn(null, e.clientX, e.clientY, isDarkAt(e.target), 1, { spread: 4, speed: 10, sizeMin: 1.4, sizeMax: 2.6, bigChance: 0, life: 0.5, rise: 6 });
     }, { passive: true });
     addEventListener('pointerdown', e => {
-      if (e.button > 0 || !siteReady) return;
+      if (e.button > 0 || !siteReady || e.pointerType === 'touch') return;
       const ctrl = e.target.closest && e.target.closest('a, button, [role="button"], .footer-hand, .label');
       const dark = isDarkAt(e.target);
       ring(e.clientX, e.clientY, dark, ctrl ? 22 : 15);
@@ -1387,6 +1409,7 @@
   // ======================================================================
   applyLang();
   buildMotifs();
+  buildAuras();
   scene = buildScene();
   heroVideo = setupHeroVideo();
   const navMark = $('#navMark'), heroWord = $('#heroWord');
@@ -1445,44 +1468,34 @@
     }
     return Promise.all(jobs);
   }
+  // The entrance: the star breathes, a bar of light fills as the site loads, then the
+  // site opens by itself. Browsers keep sound off until the first tap or click, so the
+  // TADA notes join from the visitor's first touch.
   function entrance() {
     return new Promise(resolve => {
       const g = $('#ldGate');
-      if (!g) { resolve(SND.enabled()); return; }
-      const pct = $('.ld-gate-pct', g), barBox = $('.ld-gate-bar', g), bar = $('i', barBox), acts = $('.ld-gate-actions', g);
+      if (!g) { resolve(); return; }
+      const barBox = $('.ld-gate-bar', g), bar = $('i', barBox);
       $('.ld-gate-star', g).innerHTML = `<svg viewBox="${LOW.cx - LOW.r} ${LOW.cy - LOW.r} ${2 * LOW.r} ${2 * LOW.r}"><path d="${LOW.d}"/></svg>`;
       const lockWas = document.documentElement.style.overflow;
       document.documentElement.style.overflow = 'hidden';
       const shown = { v: 0 };
       const render = () => {
-        const n = Math.round(shown.v * 100);
-        pct.textContent = lang === 'fa' ? faDigits(n) + '٪' : n + '%';
         bar.style.transform = `scaleX(${shown.v})`;
-        barBox.setAttribute('aria-valuenow', n);
+        barBox.style.setProperty('--p', shown.v.toFixed(4));
+        barBox.setAttribute('aria-valuenow', Math.round(shown.v * 100));
       };
       const t0 = performance.now();
       let target = 0;
-      preload(f => { if (f > target) { target = f; gsap.to(shown, { v: target, duration: 0.6, ease: 'power2.out', overwrite: true, onUpdate: render }); } })
+      preload(f => { if (f > target) { target = f; gsap.to(shown, { v: target * 0.94, duration: 0.45, ease: 'power2.out', overwrite: true, onUpdate: render }); } })
         .then(() => {
-          const wait = Math.max(0, 1100 - (performance.now() - t0)) / 1000;  // never a flash, never a wait
-          gsap.to(shown, { v: 1, duration: 0.5, delay: wait, ease: 'power2.out', overwrite: true, onUpdate: render, onComplete: ready });
+          const wait = Math.max(0, 500 - (performance.now() - t0)) / 1000;   // never a flash
+          gsap.to(shown, { v: 1, duration: 0.4, delay: wait, ease: 'power2.inOut', overwrite: true, onUpdate: render, onComplete: () => {
+            document.documentElement.style.overflow = lockWas;
+            gsap.to(g, { opacity: 0, duration: 0.55, delay: 0.12, ease: 'power2.inOut', onComplete: () => g.remove() });
+            setTimeout(resolve, 240);
+          } });
         });
-      function ready() {
-        g.classList.add('is-ready'); acts.hidden = false;
-        gsap.fromTo(acts.children, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.8, stagger: 0.09, ease: 'power3.out' });
-        $('.ld-enter', g).focus({ preventScroll: true });
-      }
-      let gone = false;
-      const go = withSound => {
-        if (gone) return; gone = true;
-        SND.setEnabled(withSound);           // inside the click: the browser lets the sound in
-        document.documentElement.style.overflow = lockWas;
-        gsap.to(g, { opacity: 0, duration: 0.7, ease: 'power2.inOut', onComplete: () => g.remove() });
-        const sk = $('.skip-link'); if (sk) sk.focus({ preventScroll: true });   // keyboard users start at «skip to content»
-        setTimeout(() => resolve(withSound), 250);
-      };
-      $('.ld-enter', g).addEventListener('click', () => go(true));
-      $('.ld-enter-quiet', g).addEventListener('click', () => go(false));
     });
   }
 

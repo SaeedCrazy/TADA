@@ -58,7 +58,7 @@
 /* surfaces */
 [data-surface="dark"]  { --bg: var(--night-purple); --fg: var(--lilac-mist); --fg-soft: rgba(239,233,242,.72); --ink: var(--lilac-mist); --link: var(--lilac-mist); --focus: var(--lilac); }
 [data-surface="light"] { --bg: var(--lilac-mist);   --fg: var(--night-purple); --fg-soft: rgba(53,8,76,.66); --ink: var(--tada-purple); --link: var(--tada-purple); --focus: var(--tada-purple); }
-[data-surface="paper"] { --bg: var(--label-paper);  --fg: var(--night-purple); --fg-soft: rgba(53,8,76,.66); --ink: var(--tada-purple); --link: var(--tada-purple); --focus: var(--tada-purple); }
+[data-surface="paper"] { --bg: var(--lilac-mist);  --fg: var(--night-purple); --fg-soft: rgba(53,8,76,.66); --ink: var(--tada-purple); --link: var(--tada-purple); --focus: var(--tada-purple); }
 
 /* ---------- base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -255,7 +255,7 @@ html[lang="en"] .mmenu-lang { font-family: var(--font-fa); }
 }
 
 /* ---------- menu: pinned, the labels slide; the magic draws the shelf ---------- */
-.menu { position: relative; height: 100svh; min-height: 640px; background: var(--label-paper); color: var(--night-purple); overflow: hidden; display: flex; flex-direction: column;
+.menu { position: relative; height: 100svh; min-height: 640px; background: var(--lilac-mist); color: var(--night-purple); overflow: hidden; display: flex; flex-direction: column;
   --panel-h: min(56svh, 520px); --panel-w: min(400px, 30vw); --pack-w: min(760px, 58vw); --panel-gap: clamp(56px, 6vw, 96px); }
 .menu-head { position: relative; z-index: 3; padding-top: calc(var(--nav-h) + clamp(24px, 4vh, 48px)); }
 .menu-head .lead { margin-top: var(--s-3); }
@@ -358,8 +358,7 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
 .footer-links { margin-top: var(--s-6); display: flex; gap: var(--s-6); flex-wrap: wrap; justify-content: center; }
 .footer-col > .small { margin-top: var(--s-5); }
 
-/* brand texture: the shippo tile, barely there, on the menu paper and the footer */
-.menu::before, .footer::before { content: ""; position: absolute; inset: 0; pointer-events: none; background-image: url("../assets/brand/tada-pattern-tile_purple.svg"); background-size: 72px 72px; opacity: .028; }
+/* the brand texture is one sheet for the whole page: see .bg-field below */
 .footer > .container, .menu > .container, .menu > .menu-stage { position: relative; }
 
 /* ---------- motion preferences ---------- */
@@ -371,22 +370,27 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
   .hero-cap { position: relative; opacity: 1 !important; margin-top: var(--s-6); inset-inline-start: 0; }
 }
 
-/* ---------- quiet brand motifs: shippo cloud and hollow kit sparkles, very faint ---------- */
+/* ---------- quiet brand motifs: hollow kit sparkles, very faint ---------- */
 .story, .branches, .collab, .menu, .footer { isolation: isolate; }
 .bg-motif { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; }
-.hero-stage > .bg-motif, .hero-stage > .bg-aura { z-index: 0; }
+.hero-stage > .bg-motif, .hero-stage > .bg-field { z-index: 0; }
 .motif-layer { position: absolute; display: block; width: var(--s); height: var(--s); margin: calc(var(--s) / -2); }
-.motif-cloud { background: url("../assets/brand/tada-pattern-tile_purple.svg") center / 64px repeat; opacity: .075;
-  -webkit-mask-image: radial-gradient(closest-side, #000 0%, rgba(0, 0, 0, .55) 45%, transparent 100%); mask-image: radial-gradient(closest-side, #000 0%, rgba(0, 0, 0, .55) 45%, transparent 100%); }
-.hero .motif-cloud { background-image: url("../assets/brand/tada-pattern-tile_white.svg"); opacity: .05; }
 .motif-star svg { display: block; width: 100%; height: 100%; fill: var(--tada-purple); opacity: .06; animation: motif-sway var(--spin, 12s) ease-in-out infinite alternate; }
 .hero .motif-star svg { fill: var(--lilac); opacity: .08; }
 @keyframes motif-sway { from { transform: rotate(-7deg) scale(.97); } to { transform: rotate(7deg) scale(1.03); } }
 @media (max-width: 600px) { .motif-star:nth-child(n+3) { display: none; } .motif-layer { width: calc(var(--s) * .7); height: calc(var(--s) * .7); margin: calc(var(--s) * -.35); } }
 @media (prefers-reduced-motion: reduce) { .motif-star svg { animation: none; } }
 
-/* ---------- the cursor wakes the pattern (mouse only; positions set by main.js) ---------- */
-.bg-aura { position: absolute; inset: 0; pointer-events: none; z-index: -1; opacity: 0;
+/* ---------- one pattern sheet for the whole page ----------
+   Each section holds the same faint shippo sheet; main.js shifts every sheet onto one
+   page-wide grid, so the pattern runs on across section edges as a single piece. The
+   halo under the mouse is one shape in screen space, drawn into each section it touches. */
+.bg-field { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; }
+.bg-sheet, .bg-aura { position: absolute; left: 0; right: 0; top: -72px; bottom: 0; will-change: transform;
+  background: url("../assets/brand/tada-pattern-tile_purple.svg") 0 0 / 72px 72px repeat; }
+.bg-sheet { opacity: .034; }
+.hero .bg-sheet { background-image: url("../assets/brand/tada-pattern-tile_white.svg"); opacity: .028; }
+.bg-aura { opacity: 0;
   background: radial-gradient(240px circle at var(--ax, -999px) var(--ay, -999px), rgba(146, 109, 143, .22), rgba(146, 109, 143, 0) 70%),
               url("../assets/brand/tada-pattern-tile_purple.svg") 0 0 / 72px 72px repeat;
   -webkit-mask-image: radial-gradient(170px circle at var(--ax, -999px) var(--ay, -999px), #000 0%, rgba(0, 0, 0, .55) 50%, transparent 100%),

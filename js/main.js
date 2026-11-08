@@ -447,55 +447,75 @@
     }
   }
 
-  // ---------- the cursor wakes the pattern ----------
-  // Under the mouse, the shippo pattern of the section lights up in a soft halo; a second,
-  // slower halo trails behind, so the place the cursor left fades out gently.
-  const AURA_HOSTS = ['#heroStage', '#story', '#menu', '#branches', '#collab', '#footer'];
-  let auras = [], auraMoved = 0;
-  function buildAuras() {
-    if (reduce || !fine) return;
-    auras = AURA_HOSTS.map(sel => {
+  // ---------- one pattern sheet for the whole page ----------
+  // Every section carries the same faint shippo sheet, and each sheet is shifted so its
+  // tiles sit on one page-wide grid: across section edges and through the pinned scenes
+  // the pattern runs on as a single piece. With a mouse the sheet drifts a little slower
+  // than the page, for depth. Under the mouse a halo wakes the pattern, and a slower halo
+  // trails behind so the place the cursor left fades out gently; the halo is one shape in
+  // screen space, drawn into every section it touches, so it crosses edges unbroken.
+  const FIELD_HOSTS = ['#heroStage', '#story', '#menu', '#branches', '#collab', '#footer'];
+  const TILE = 72, DRIFT = fine && !reduce ? 0.8 : 1, PX = 1 / Math.min(devicePixelRatio || 1, 2);
+  const halo = { ax: 0, ay: 0, bx: 0, by: 0, o: 0, seen: false };
+  let fields = [], auraMoved = 0, hasAura = false;
+  function buildField() {
+    hasAura = !reduce && fine;
+    fields = FIELD_HOSTS.map(sel => {
       const host = $(sel); if (!host) return null;
-      const n = document.createElement('div');
-      n.className = 'bg-aura'; n.setAttribute('aria-hidden', 'true');
-      host.prepend(n);
-      return { host, n, ax: 0, ay: 0, bx: 0, by: 0, o: 0, seen: false, vis: false, max: sel === '#heroStage' ? 0.34 : 0.46 };
+      const box = document.createElement('div'), sheet = document.createElement('i');
+      box.className = 'bg-field'; box.setAttribute('aria-hidden', 'true');
+      sheet.className = 'bg-sheet'; box.append(sheet);
+      let aura = null;
+      if (hasAura) { aura = document.createElement('i'); aura.className = 'bg-aura'; box.append(aura); }
+      host.prepend(box);
+      return { host, sheet, aura, t: -1, vis: false, max: sel === '#heroStage' ? 0.34 : 0.46 };
     }).filter(Boolean);
-    addEventListener('pointermove', e => { if (e.pointerType === 'mouse') auraMoved = performance.now(); }, { passive: true });
+    if (hasAura) addEventListener('pointermove', e => { if (e.pointerType === 'mouse') auraMoved = performance.now(); }, { passive: true });
   }
-  function auraStep(dt, now) {
-    if (!auras.length) return;
-    const moving = now - auraMoved < 160;
-    for (const a of auras) {
-      const r = a.host.getBoundingClientRect();
-      if (r.bottom < 0 || r.top > innerHeight) { if (a.vis) { a.n.style.opacity = 0; a.vis = false; a.o = 0; } continue; }
-      const inside = mouse.on && mouse.x >= r.left && mouse.x <= r.right && mouse.y >= r.top && mouse.y <= r.bottom;
-      const tx = mouse.x - r.left, ty = mouse.y - r.top;
-      if (inside) {
-        if (!a.seen) { a.ax = a.bx = tx; a.ay = a.by = ty; a.seen = true; }
+  function fieldStep(dt, now) {
+    if (!fields.length) return;
+    const h = halo;
+    if (hasAura) {
+      if (mouse.on) {
+        if (!h.seen) { h.ax = h.bx = mouse.x; h.ay = h.by = mouse.y; h.seen = true; }
         const k1 = 1 - Math.exp(-dt * 8), k2 = 1 - Math.exp(-dt * 1.4);
-        a.ax += (tx - a.ax) * k1; a.ay += (ty - a.ay) * k1;
-        a.bx += (tx - a.bx) * k2; a.by += (ty - a.by) * k2;
+        h.ax += (mouse.x - h.ax) * k1; h.ay += (mouse.y - h.ay) * k1;
+        h.bx += (mouse.x - h.bx) * k2; h.by += (mouse.y - h.by) * k2;
       }
-      const target = inside ? (moving ? 1 : 0.5) : 0;
-      a.o += (target - a.o) * (1 - Math.exp(-dt * (target > a.o ? 2.6 : 0.65)));   // wakes softly, fades slowly
-      if (a.o < 0.004) { if (a.vis) { a.n.style.opacity = 0; a.vis = false; } if (!inside) a.seen = false; continue; }
-      a.vis = true;
-      const st = a.n.style;
-      st.opacity = (a.o * a.max).toFixed(3);
-      st.setProperty('--ax', a.ax.toFixed(1) + 'px'); st.setProperty('--ay', a.ay.toFixed(1) + 'px');
-      st.setProperty('--bx', a.bx.toFixed(1) + 'px'); st.setProperty('--by', a.by.toFixed(1) + 'px');
+      const target = mouse.on ? (now - auraMoved < 160 ? 1 : 0.5) : 0;
+      h.o += (target - h.o) * (1 - Math.exp(-dt * (target > h.o ? 2.6 : 0.65)));   // wakes softly, fades slowly
+      if (h.o < 0.004 && !mouse.on) h.seen = false;
+    }
+    const lit = hasAura && h.o >= 0.004, hy0 = Math.min(h.ay - 200, h.by - 340), hy1 = Math.max(h.ay + 200, h.by + 340);
+    const g = DRIFT * scrollY;
+    for (const f of fields) {
+      const r = f.host.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight) { if (f.vis) { f.aura.style.opacity = 0; f.vis = false; } continue; }
+      // the shift that puts this sheet's tiles on the page grid
+      let t = ((TILE - r.top - g) % TILE + TILE) % TILE;
+      t = Math.round(t / PX) * PX;
+      if (t !== f.t) {
+        f.t = t; const tf = `translate3d(0,${t}px,0)`;
+        f.sheet.style.transform = tf; if (f.aura) f.aura.style.transform = tf;
+      }
+      if (!f.aura) continue;
+      if (!lit || hy1 < r.top || hy0 > r.bottom) { if (f.vis) { f.aura.style.opacity = 0; f.vis = false; } continue; }
+      f.vis = true;
+      const top = r.top - TILE + t, st = f.aura.style;
+      st.opacity = (h.o * f.max).toFixed(3);
+      st.setProperty('--ax', (h.ax - r.left).toFixed(1) + 'px'); st.setProperty('--ay', (h.ay - top).toFixed(1) + 'px');
+      st.setProperty('--bx', (h.bx - r.left).toFixed(1) + 'px'); st.setProperty('--by', (h.by - top).toFixed(1) + 'px');
     }
   }
 
   // ---------- quiet brand motifs behind the sections ----------
-  // A cloud of the shippo pattern and a few hollow kit sparkles, very faint, slowly turning;
+  // A few hollow kit sparkles, very faint, slowly turning;
   // they drift a little against the cursor (depth = how far).
   const MOTIFS = {
-    hero:     { cloud: [12, 74, 520], stars: [[20, 24, 96, 0.6], [7, 50, 44, 1], [64, 88, 60, 0.8]] },
-    story:    { cloud: [86, 78, 480], stars: [[6, 16, 124, 0.5], [44, 90, 52, 0.9]] },
-    branches: { cloud: [10, 32, 440], stars: [[86, 84, 84, 0.6], [30, 10, 40, 1]] },
-    collab:   { cloud: [80, 22, 420], stars: [[12, 72, 112, 0.5], [58, 90, 44, 0.9]] },
+    hero:     { stars: [[20, 24, 96, 0.6], [7, 50, 44, 1], [64, 88, 60, 0.8]] },
+    story:    { stars: [[6, 16, 124, 0.5], [44, 90, 52, 0.9]] },
+    branches: { stars: [[86, 84, 84, 0.6], [30, 10, 40, 1]] },
+    collab:   { stars: [[12, 72, 112, 0.5], [58, 90, 44, 0.9]] },
   };
   // the mark's three sparkles, as they sit in the kit
   const trio = (() => {
@@ -508,8 +528,7 @@
       const host = id === 'hero' ? $('#heroStage') : $('#' + id); if (!host) continue;
       const m = MOTIFS[id], box = document.createElement('div');
       box.className = 'bg-motif'; box.setAttribute('aria-hidden', 'true');
-      box.innerHTML = `<i class="motif-layer motif-cloud" data-depth="0.35" style="inset-inline-start:${m.cloud[0]}%;top:${m.cloud[1]}%;--s:${m.cloud[2]}px"></i>` +
-        m.stars.map(([x, y, s, d], i) => `<span class="motif-layer motif-star" data-depth="${d}" style="inset-inline-start:${x}%;top:${y}%;--s:${Math.round(s * 1.5)}px;--spin:${11 + i * 3}s">${trio}</span>`).join('');
+      box.innerHTML = m.stars.map(([x, y, s, d], i) => `<span class="motif-layer motif-star" data-depth="${d}" style="inset-inline-start:${x}%;top:${y}%;--s:${Math.round(s * 1.5)}px;--spin:${11 + i * 3}s">${trio}</span>`).join('');
       host.prepend(box);
     }
     if (reduce || !matchMedia('(pointer: fine)').matches) return;
@@ -522,10 +541,10 @@
   }
 
   // ---------- the living ink ----------
-  // Everything the magic has made stays alive: glints of light run inside the drawn
-  // strokes the way the pen went (the line, beads, shippo, the lattice, the logotype,
-  // the cup, the footer hand), shedding motes that lift off and fade, and the kit
-  // stars and beads twinkle. Only what is drawn and on screen is used; the drawn part
+  // Everything the magic has made stays alive, quietly: now and then a long, soft sheen
+  // of light glides inside the drawn strokes the way the pen went (the line, beads,
+  // shippo, the lattice, the logotype, the cup, the footer hand), and the kit stars and
+  // beads breathe. Only what is drawn and on screen is used; the drawn part
   // of each stroke is read from its own dash, so it follows the pen exactly.
   const LIVE_SEL = '.ink path.ink-link, #heroScene path.sc:not(.sc-markline)';
   const TWINKLE_SEL = '#heroScene .sc-star, .label-band.is-lit svg, .label-spark, .ink path.ink-bead';
@@ -645,24 +664,25 @@
     zoneRects();
     if (now - live.at > (small() ? 420 : 220)) refreshLive(now);
     const S = small(), maxFlows = S ? 24 : 110;
-    // glints: as many as the ink on screen can carry
-    const rate = Math.min(S ? 3 : 9, live.total * (S ? 0.004 : 0.007));
+    // sheens: a few long, soft washes of light gliding inside the strokes, the way light
+    // wakes the pattern lines under the cursor; never many at once
+    const rate = Math.min(S ? 0.55 : 1.1, live.total * 0.0011);
     live.acc += dt * rate;
     while (live.acc >= 1) {
       live.acc -= 1;
-      if (live.nG >= (S ? 6 : 20) || !live.src.length) continue;
+      if (live.nG >= (S ? 3 : 5) || !live.src.length) continue;
       live.nG++;
       const elm = pickSource(), L = elm && elm.__live; if (!L) continue;
-      const speed = 20 + Math.random() * 24;
-      flows.push({ k: 'g', el: elm, s: L.a + Math.random() * (L.b - L.a), v: speed / L.sc, life: 0, max: 2.6 + Math.random() * 2.2, trail: [], shed: Math.random() * 0.1, big: Math.random() < 0.22, edge: 0 });
+      const speed = 26 + Math.random() * 16, len = (S ? 90 : 130) + Math.random() * 60;
+      flows.push({ k: 'g', el: elm, s: L.a + Math.random() * (L.b - L.a), v: speed / L.sc, len: len / L.sc, life: 0, max: 4.2 + Math.random() * 2.4, edge: 0 });
     }
-    // twinkles on the kit stars and beads
-    live.tacc += dt * (live.tw.length ? (S ? 0.4 : 0.9) : 0);
+    // the kit stars and beads breathe now and then
+    live.tacc += dt * (live.tw.length ? (S ? 0.25 : 0.5) : 0);
     while (live.tacc >= 1) {
       live.tacc -= 1;
       if (!live.tw.length || flows.length >= maxFlows + 12) continue;
       const t = live.tw[(Math.random() * live.tw.length) | 0];
-      flows.push({ k: 't', el: t.el, lx: t.cx, ly: t.cy, r: t.r * (0.8 + Math.random() * 0.5), dark: t.dark, life: 0, max: 0.8 + Math.random() * 0.5, rot: Math.random() * 0.8 });
+      flows.push({ k: 't', el: t.el, lx: t.cx, ly: t.cy, r: t.r * (0.8 + Math.random() * 0.5), dark: t.dark, life: 0, max: 1.5 + Math.random() * 0.8, rot: Math.random() * 0.8 });
     }
     const add = []; live.nG = 0;
     flows = flows.filter(f => {
@@ -673,16 +693,8 @@
       f.s += L.dir * f.v * dt;
       const left = (L.dir > 0 ? L.b - f.s : f.s - L.a) * L.sc;
       if (left <= 0 || f.s < L.a - 1 || f.s > L.b + 1) return false;
-      f.edge = Math.min(1, left / 16, ((L.dir > 0 ? f.s - L.a : L.b - f.s) * L.sc + 4) / 12);
-      const pt = pathPt(f.el, f.s);
-      f.trail.push(pt.x, pt.y); if (f.trail.length > 52) f.trail.splice(0, 2);
+      f.edge = Math.min(1, left / 40);
       live.nG++;
-      f.shed -= dt;
-      if (!S && f.shed <= 0 && flows.length + add.length < maxFlows) {                                 // a mote lifts off the current
-        f.shed = 0.2 + Math.random() * 0.25;
-        const a = Math.random() * 6.283, sp = 1.5 + Math.random() * 3.5;
-        add.push({ k: 'm', el: f.el, lx: pt.x, ly: pt.y, ox: 0, oy: 0, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.5, r: 0.7 + Math.random() * 0.95, dark: L.dark, life: 0, max: 0.6 + Math.random() * 0.8, hue: Math.random() < 0.5 });
-      }
       return true;
     });
     if (add.length) flows.push(...add);
@@ -692,32 +704,33 @@
       const X = (x, y) => m.a * x + m.c * y + m.e, Y = (x, y) => m.b * x + m.d * y + m.f;
       const t = f.life / f.max;
       if (f.k === 'g') {
-        const dark = f.el.__live.dark;
-        const a = Math.sin(Math.PI * Math.min(1, t * 1.15)) * f.edge * (0.75 + 0.25 * Math.sin(now / 90 + f.max * 9));
-        const tr = f.trail, n = tr.length / 2;
-        if (a <= 0.01 || !n) continue;
-        ctx.globalCompositeOperation = dark ? 'lighter' : 'source-over';
+        // a sheen: soft at both ends, brightest in the middle, as wide as the stroke itself
+        const Lv = f.el.__live, dark = Lv.dark;
+        const a = Math.pow(Math.sin(Math.PI * t), 1.4) * f.edge;
+        if (a <= 0.01) continue;
+        const s0 = Math.max(Lv.a, Math.min(Lv.b, f.s - Lv.dir * f.len)), s1 = f.s;
+        const span = Math.abs(s1 - s0) * Lv.sc; if (span < 4) continue;
+        const n = Math.max(4, Math.min(40, Math.round(span / 5))), w = (live.inkW || 3);
+        const P = [];
+        for (let i = 0; i <= n; i++) { const p = pathPt(f.el, s0 + (s1 - s0) * i / n); P.push(X(p.x, p.y), Y(p.x, p.y)); }
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.lineCap = 'round';
-        ctx.strokeStyle = '#FFFFFF';
-        for (let i = 1; i < n; i++) {                     // the streak: a pulse of light inside the stroke
-          const q = i / (n - 1);
-          ctx.globalAlpha = a * q * (dark ? 0.62 : 0.72);
-          ctx.lineWidth = (f.big ? 2.4 : 1.7) * (0.3 + 0.7 * q);
-          ctx.beginPath();
-          ctx.moveTo(X(tr[2 * i - 2], tr[2 * i - 1]), Y(tr[2 * i - 2], tr[2 * i - 1]));
-          ctx.lineTo(X(tr[2 * i], tr[2 * i + 1]), Y(tr[2 * i], tr[2 * i + 1]));
-          ctx.stroke();
+        ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+        // 1) a faint bloom around the line, like the halo on the pattern
+        ctx.globalCompositeOperation = dark ? 'lighter' : 'source-over';
+        ctx.strokeStyle = dark ? '#C9B3CF' : '#B79BC0';
+        ctx.lineWidth = w * 3.2;
+        for (let i = 1; i <= n; i++) {
+          const q = Math.sin(Math.PI * (i - 0.5) / n);
+          ctx.globalAlpha = a * q * q * (dark ? 0.07 : 0.1);
+          ctx.beginPath(); ctx.moveTo(P[2 * i - 2], P[2 * i - 1]); ctx.lineTo(P[2 * i], P[2 * i + 1]); ctx.stroke();
         }
-        const hx = X(tr[tr.length - 2], tr[tr.length - 1]), hy = Y(tr[tr.length - 2], tr[tr.length - 1]);
-        ctx.globalAlpha = a * (dark ? 0.4 : 0.3);
-        ctx.fillStyle = dark ? '#C9B3CF' : '#926D8F';
-        ctx.beginPath(); ctx.arc(hx, hy, f.big ? 8 : 5.5, 0, 6.283); ctx.fill();
-        if (f.big) {                                     // the brightest ones carry a tiny kit star
-          const sc = 3.2 / LOW.r, rot = now / 700 + f.max * 5, c = Math.cos(rot) * sc * dpr, s = Math.sin(rot) * sc * dpr;
-          ctx.globalAlpha = a; ctx.fillStyle = dark ? '#FFFFFF' : '#662482';
-          ctx.setTransform(c, s, -s, c, hx * dpr - (c * LOW.cx - s * LOW.cy), hy * dpr - (s * LOW.cx + c * LOW.cy));
-          ctx.fill(starPath);
+        // 2) the light inside the stroke
+        ctx.strokeStyle = dark ? '#FFFFFF' : '#E6D9EA';
+        ctx.lineWidth = Math.max(1, w * 0.62);
+        for (let i = 1; i <= n; i++) {
+          const q = Math.sin(Math.PI * (i - 0.5) / n);
+          ctx.globalAlpha = a * q * q * (dark ? 0.55 : 0.6);
+          ctx.beginPath(); ctx.moveTo(P[2 * i - 2], P[2 * i - 1]); ctx.lineTo(P[2 * i], P[2 * i + 1]); ctx.stroke();
         }
       } else if (f.k === 'm') {
         f.ox += f.vx * dt; f.oy += f.vy * dt; f.vx *= 0.97; f.vy *= 0.97;
@@ -733,10 +746,10 @@
         if (inZone(x, y)) { f.life = f.max; continue; }
         ctx.globalCompositeOperation = f.dark ? 'lighter' : 'source-over';
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.globalAlpha = e * 0.28; ctx.fillStyle = f.dark ? '#C9B3CF' : '#926D8F';
-        ctx.beginPath(); ctx.arc(x, y, Math.max(0.1, f.r * 1.9 * e), 0, 6.283); ctx.fill();
-        const sc = (f.r * (0.4 + 0.6 * e)) / LOW.r, rot = f.rot + t * 0.9, c = Math.cos(rot) * sc * dpr, s = Math.sin(rot) * sc * dpr;
-        ctx.globalAlpha = e * 0.95; ctx.fillStyle = f.dark ? '#FFFFFF' : '#662482';
+        ctx.globalAlpha = e * 0.16; ctx.fillStyle = f.dark ? '#C9B3CF' : '#B79BC0';
+        ctx.beginPath(); ctx.arc(x, y, Math.max(0.1, f.r * 2.2 * e), 0, 6.283); ctx.fill();
+        const sc = (f.r * (0.4 + 0.5 * e)) / LOW.r, rot = f.rot + t * 0.5, c = Math.cos(rot) * sc * dpr, s = Math.sin(rot) * sc * dpr;
+        ctx.globalAlpha = e * 0.7; ctx.fillStyle = f.dark ? '#FFFFFF' : '#662482';
         ctx.setTransform(c, s, -s, c, x * dpr - (c * LOW.cx - s * LOW.cy), y * dpr - (s * LOW.cx + c * LOW.cy));
         ctx.fill(starPath);
       }
@@ -750,8 +763,8 @@
   function tick() {
     const now = performance.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
     if (siteReady) checkLabels();
+    fieldStep(dt, now);
     if (!siteReady || reduce) return;
-    auraStep(dt, now);
     // head
     const fr = parked ? null : frontier();
     if (fr && birthDone) {
@@ -1409,7 +1422,7 @@
   // ======================================================================
   applyLang();
   buildMotifs();
-  buildAuras();
+  buildField();
   scene = buildScene();
   heroVideo = setupHeroVideo();
   const navMark = $('#navMark'), heroWord = $('#heroWord');

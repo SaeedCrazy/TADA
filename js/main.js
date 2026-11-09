@@ -1,32 +1,37 @@
-// TADA Lounge — site script
-// -------------------------
-// Language (fa/en), the loader hand-off, the scroll-scrubbed hero film, the menu
-// track, the nav, sound, the cursor, and the Tada magic: one continuous line with a
-// glowing head that is born from the logotype's last foot, draws the shippo lattice,
-// star beads and the menu shelf, and at the very end draws the footer hand, which
-// snaps and takes the magic back as its lowest sparkle.
+// TADA Lounge — the glass
+// ----------------------
+// The door draws itself while the site loads (the arch, the snapping hand, its three
+// sparkles, the wordmarks: all the designer's own vectors). Its last stroke is where the
+// Tada magic begins: one line with a glowing head that runs through the page, writes the
+// headlines in Tada's letters, wakes each illustration of the glass as it passes, draws
+// the staff of the menu, walks down the stairs to the branches, lays the road for the
+// scooter, and at the very end finds the hand on the whole glass and snaps.
 //
-// Classic script; depends on gsap, ScrollTrigger, (Lenis), BRAND, SITE, CONTENT,
-// TadaLoader, TadaSound.
+// Classic script; depends on gsap, ScrollTrigger, (Lenis), TADA_GLYPHS/TadaType,
+// TADA_ART, SITE, CONTENT, TadaSound.
 
 (function () {
   'use strict';
 
-  const { buildHandSvg, buildWordmarkSvg, addSnapHelpers, prepSnap, addSnap, playLoader, shouldPlayLoader, HAND, el } = window.TadaLoader;
-  const SND = window.TadaSound;
-  const sfx = SND.sfx;
-  const [VX, VY, VW, VH] = HAND.viewBox;
-  const WORD = BRAND.wordmark;
-  const LOW = HAND.stars[2];                 // the lowest (and smallest) sparkle: the magic itself
-  const C = { x: 487.5, y: 404 };            // contact point of the snap
+  const SND = window.TadaSound, sfx = SND.sfx;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs = {}, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; };
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fine = matchMedia('(pointer: fine)').matches;
   const small = () => innerWidth < 768;
-  const fine = matchMedia('(pointer: fine)').matches;   // a mouse: the costly extras are for it only
+  const narrow = () => innerWidth < 1024;
+  const vw = () => document.documentElement.clientWidth;
   const vh = () => innerHeight;
+  document.documentElement.classList.add('js');
   gsap.registerPlugin(ScrollTrigger);
   ScrollTrigger.config({ ignoreMobileResize: true });
+
+  // the brand's four-point sparkle, exactly as drawn on the glass (unit size, centred)
+  const STAR_D = 'M0 -1C0.17 -0.54 0.52 -0.18 1 0C0.52 0.18 0.17 0.54 0 1C-0.17 0.54 -0.52 0.18 -1 0C-0.52 -0.18 -0.17 -0.54 0 -1Z';
+  const starPath = new Path2D(STAR_D);
+  document.documentElement.style.setProperty('--star-mask', `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='-1 -1 2 2'><path d='${STAR_D}'/></svg>`)}")`);
 
   // ======================================================================
   // Language and content
@@ -36,165 +41,248 @@
   if (!CONTENT[lang]) lang = 'fa';
   const T = () => CONTENT[lang];
   const RTL = () => T().dir === 'rtl';
-  const SGN = () => (RTL() ? -1 : 1);        // +x toward the far edge of the reading direction
   const num = v => (lang === 'fa' ? faDigits(v) : String(v));
   const get = (obj, path) => path.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
+
+  // ---------- the art of the glass ----------
+  const ART = TADA_ART;
+  function artSvg(name) {
+    const a = ART[name]; if (!a) return null;
+    const svg = el('svg', { viewBox: a.vb.join(' '), class: 'art', 'aria-hidden': 'true', focusable: 'false' });
+    const strokes = [], fills = [];
+    for (const [d, k, wf] of a.p) {
+      const p = el('path', { d, class: k ? 'f' : 's' }, svg);
+      if (!k && wf) p.style.strokeWidth = `calc(var(--sw) * ${wf})`;
+      (k ? fills : strokes).push(p);
+    }
+    svg.__art = { name, strokes, fills, w: a.vb[2], drawn: false };
+    return svg;
+  }
+  // every illustration is drawn with the one line of the page, at the same weight on screen
+  function inkPx() { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ink-w')) || 2; }
+  function fitArt(svg) {
+    const A = svg.__art; if (!A || !A.w) return;
+    const w = svg.getBoundingClientRect().width; if (!w) return;
+    svg.style.setProperty('--sw', (inkPx() / (w / A.w)).toFixed(2));
+  }
+  const fitAll = () => $$('svg.art').forEach(fitArt);
+
+  function prepDraw(svg) {
+    const A = svg.__art; if (!A || A.drawn || A.prepped) return;
+    A.prepped = true;
+    svg.classList.add('is-waiting');
+    for (const p of A.strokes) { const L = p.getTotalLength() + 1; p.__L = L; p.style.strokeDasharray = `${L} ${L}`; p.style.strokeDashoffset = L; }
+    for (const f of A.fills) { f.style.transformBox = 'fill-box'; f.style.transformOrigin = 'center'; }
+  }
+  // the magic touches a piece: it draws itself, stroke after stroke, calmly
+  function drawArt(svg, o = {}) {
+    const A = svg && svg.__art; if (!A || A.drawn) return;
+    A.drawn = true;
+    const quick = o.instant || reduce || quiet;
+    svg.classList.remove('is-waiting');
+    if (quick || !A.prepped) {
+      for (const p of A.strokes) { p.style.strokeDasharray = ''; p.style.strokeDashoffset = ''; }
+      for (const f of A.fills) { f.style.opacity = ''; f.style.transform = ''; }
+      return;
+    }
+    const dur = o.dur ?? Math.min(2.6, 1.1 + A.strokes.length * 0.03);
+    const n = A.strokes.length, each = Math.min(1.2, dur * 0.6), stagger = n > 1 ? (dur - each) / (n - 1) : 0;
+    A.strokes.forEach((p, i) => gsap.to(p, { strokeDashoffset: 0, duration: each, delay: (o.delay || 0) + i * stagger, ease: 'power1.inOut', onComplete: () => { p.style.strokeDasharray = ''; p.style.strokeDashoffset = ''; } }));
+    A.fills.forEach((f, i) => gsap.fromTo(f, { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.8, delay: (o.delay || 0) + dur * 0.45 + i * Math.min(0.12, dur * 0.4 / A.fills.length), ease: 'back.out(2.2)', clearProps: 'transform' }));
+  }
+
+  // ---------- Tada letters ----------
+  const headSize = () => (small() ? 32 : narrow() ? 44 : 56);
+  function letters(text, size, cls) {
+    const svg = TadaType.svg(text, { size, weight: 0.064, cls });
+    svg.__art = { strokes: $$('.tt-s', svg), fills: $$('.tt-f', svg), drawn: false };
+    return svg;
+  }
+  function buildHeadline(h) {
+    const text = get(T(), h.dataset.tt) || '';
+    h.replaceChildren();
+    if (lang === 'fa') {
+      const sr = document.createElement('span'); sr.className = 'sr'; sr.textContent = text.replace(/ـ/g, '');
+      const svg = letters(text, headSize());
+      h.append(sr, svg);
+    } else {
+      h.textContent = text;
+    }
+  }
+  function writeHeadline(h) {
+    if (h.__drawn) return;
+    h.__drawn = true;
+    const svg = $('svg.tt', h);
+    if (svg) drawArt(svg, { dur: Math.min(2.2, 0.9 + svg.__art.strokes.length * 0.05) });
+    else if (!reduce && !quiet) gsap.fromTo(h, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 1.1, ease: 'power2.out', clearProps: 'all' });
+  }
+
+  // ---------- the glass's chamfered panel, drawn around an element ----------
+  const framed = new Set();
+  function frameIt(node, cut) {
+    let svg = $(':scope > .frame', node);
+    if (!svg) { svg = el('svg', { class: 'frame', 'aria-hidden': 'true' }); el('path', {}, svg); node.prepend(svg); }
+    node.__cut = cut; framed.add(node); paintFrame(node);
+  }
+  function paintFrame(node) {
+    const svg = $(':scope > .frame', node); if (!svg) return;
+    const w = node.offsetWidth, h = node.offsetHeight; if (!w || !h) return;
+    const c = Math.min(node.__cut, h / 2.6, w / 4), i = 0.6;
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.firstChild.setAttribute('d', `M${c} ${i}H${w - c}L${w - i} ${c}V${h - c}L${w - c} ${h - i}H${c}L${i} ${h - c}V${c}Z`);
+  }
+  const frameRO = 'ResizeObserver' in window ? new ResizeObserver(es => es.forEach(e => paintFrame(e.target))) : null;
+  function frameAll() {
+    $$('.btn:not(.btn-quiet)').forEach(b => { frameIt(b, 12); frameRO && frameRO.observe(b); });
+  }
+
+  // ---------- opening hours, in Tehran ----------
+  function tehranNow() {
+    try {
+      const parts = new Intl.DateTimeFormat('en-GB', { timeZone: SITE.timeZone, hour: 'numeric', minute: 'numeric', hour12: false }).formatToParts(new Date());
+      const h = +parts.find(p => p.type === 'hour').value % 24, m = +parts.find(p => p.type === 'minute').value;
+      return h + m / 60;
+    } catch { const d = new Date(); return d.getHours() + d.getMinutes() / 60; }
+  }
+  function paintStatus() {
+    const s = $('#openStatus'); if (!s) return;
+    const t = tehranNow(), H = SITE.hours, S = T().status;
+    let text, open = false;
+    const now = H.find(([a, b]) => t >= a && t < b);
+    if (now) { open = true; text = S.open(num(now[1])); }
+    else if (t < H[0][0]) text = S.today(num(H[0][0]));
+    else { const next = H.find(([a]) => t < a); text = next ? S.gap(num(next[0])) : S.tomorrow(num(H[0][0])); }
+    s.textContent = text; s.classList.toggle('is-open', open);
+  }
+  setInterval(paintStatus, 60000);
+
+  // ---------- the pieces that come from the content ----------
+  function buildPack() {
+    const P = T().bar.pack, box = $('#pack');
+    box.innerHTML = `<p class="pack-title">${P.title}</p><p class="pack-name">${P.name}</p><p class="pack-size">${P.size}</p>
+      <p class="pack-intro">${P.intro}</p>
+      <dl class="specs">${P.specs.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>
+      <p class="profile-title">${P.profileTitle}</p>
+      <ul class="profile">${P.profile.map(([a, v]) => `<li><span>${a}</span><span class="bar" role="img" aria-label="${a}: ${num(v)}٪"><i style="--v:${v}"></i></span></li>`).join('')}</ul>
+      <p class="profile-note">${P.profileNote}</p>
+      <a class="btn btn-line" href="${SITE.shop}" rel="noopener">${P.cta}</a>`;
+    frameIt(box, 26); frameRO && frameRO.observe(box);
+  }
+  const arrowSvg = '<svg viewBox="0 0 14 26" aria-hidden="true"><path d="M2 1L12 13L2 25"/></svg>';
+  function buildMenu() {
+    const M = T().menu, track = $('#menuTrack'), dots = $('#menuDots');
+    track.replaceChildren(); dots.replaceChildren();
+    M.items.forEach((it, i) => {
+      const li = document.createElement('li');
+      li.className = 'card'; li.__i = i;
+      li.setAttribute('aria-roledescription', 'slide');
+      li.setAttribute('aria-label', `${num(i + 1)} / ${num(M.items.length)}`);
+      li.innerHTML = `<div class="card-art"><span class="art-slot" data-art="${it.art}"></span></div>
+        <h3 class="card-name"><span class="${lang === 'fa' ? 'sr' : ''}">${it.name}</span></h3>
+        <p class="card-sub">${it.sub}</p><p class="card-note">${it.note}</p>
+        <button class="card-arrow is-prev" type="button" data-dir="-1" aria-label="${M.prev}" tabindex="-1">${arrowSvg}</button>
+        <button class="card-arrow is-next" type="button" data-dir="1" aria-label="${M.next}" tabindex="-1">${arrowSvg}</button>`;
+      if (lang === 'fa') $('.card-name', li).appendChild(letters(it.name, small() ? 28 : 34));
+      track.appendChild(li);
+      dots.appendChild(document.createElement('i'));
+      frameIt(li, small() ? 20 : 28);
+    });
+    fillSlots(track);
+    menuActive = -1;
+  }
+  function buildSteps() {
+    const B = T().branches, ol = $('#steps');
+    ol.innerHTML = B.list.map((b, i) => `<li class="step"><div class="step-art"><span class="art-slot" data-art="${b.art}"></span></div>
+      <h3 class="step-name">${b.name}</h3><p class="step-addr">${b.addr}</p>
+      <a class="step-link" href="${b.map}" target="_blank" rel="noopener">${B.route}</a></li>`).join('');
+    fillSlots(ol);
+  }
+  function buildCollab() {
+    $('#collabItems').innerHTML = T().collab.items.map(it => `<div><dt>${it.t}</dt><dd>${it.s}</dd></div>`).join('');
+    $('#footerLinks').innerHTML = T().glass.links.map(l => `<li><a class="btn btn-quiet" href="${l.href}" rel="noopener">${l.t}</a></li>`).join('');
+    $('#year').textContent = num(new Date().getFullYear());
+  }
+
+  function fillSlots(root = document) {
+    $$('.art-slot[data-art]', root).forEach(slot => {
+      if ($('svg.art', slot)) return;
+      const svg = artSvg(slot.dataset.art); if (svg) slot.appendChild(svg);
+    });
+  }
 
   function paintSound() {
     $$('.sound-toggle').forEach(b => { b.textContent = SND.enabled() ? T().sound.on : T().sound.off; b.setAttribute('aria-pressed', String(SND.enabled())); });
   }
-
-  // a kit sparkle as a tiny standalone svg (for labels)
-  const sparkSvg = (cls, star = HAND.stars[1]) =>
-    `<svg class="${cls}" viewBox="${star.cx - star.r} ${star.cy - star.r} ${2 * star.r} ${2 * star.r}" aria-hidden="true"><path d="${star.d}"/></svg>`;
-  const tileSvg = () => `<svg viewBox="0 0 100 100" aria-hidden="true"><path fill-rule="evenodd" d="${BRAND.patternTile.d}"/></svg>`;
-
   function applyLang() {
     const t = T();
     document.documentElement.lang = lang;
     document.documentElement.dir = t.dir;
-    document.title = lang === 'fa' ? 'تادا لانژ' : 'Tada Lounge';
+    document.title = lang === 'fa' ? 'تادا لانژ · نُت جادویی طعم' : 'Tada Lounge · The magic note of flavor';
     $$('[data-t]').forEach(n => { const v = get(t, n.dataset.t); if (typeof v === 'string') n.textContent = v; });
-    $('#langToggle').lang = lang === 'fa' ? 'en' : 'fa';
-    $('#langToggle').textContent = t.langSwitch;
-
-    // hero overlays
-    const caps = $('#heroCaptions'); caps.replaceChildren();
-    t.hero.chapters.forEach((c, i) => {
-      const d = document.createElement('div');
-      d.className = 'hero-cap' + (i === t.hero.chapters.length - 1 ? ' is-tada' : '');
-      d.innerHTML = '<b></b><span></span>';
-      d.firstChild.textContent = c.t; d.lastChild.textContent = c.s;
-      caps.appendChild(d);
-    });
-
-    buildMenu();
-
-    // collaboration
-    const ci = $('#collabItems'); ci.replaceChildren();
-    t.collab.items.forEach(it => {
-      const dt = document.createElement('dt'), dd = document.createElement('dd');
-      dt.textContent = it.t; dd.textContent = it.s; ci.append(dt, dd);
-    });
-
-    // branches
-    const rows = $('#branchRows'); rows.replaceChildren();
-    t.branches.list.forEach(b => {
-      const li = document.createElement('li');
-      li.innerHTML = '<span class="row-name"></span><span class="row-addr"></span><a class="link row-route" target="_blank" rel="noopener"></a>';
-      li.children[0].textContent = b.name; li.children[1].textContent = b.addr;
-      li.children[2].textContent = t.branches.route; li.children[2].href = b.map;
-      rows.appendChild(li);
-    });
-    const hours = $('#branchHours');
-    if (t.branches.hours) hours.textContent = t.branches.hours;
-    else hours.innerHTML = '<span class="placeholder">[[CITY]]</span> · <span class="placeholder">[[HOURS]]</span>'; // TODO: client data
-
-    // footer
-    const fl = $('#footerLinks'); fl.replaceChildren();
-    t.footer.links.forEach(l => {
-      const li = document.createElement('li'); const a = document.createElement('a');
-      a.className = 'glass'; a.href = l.href; a.rel = 'noopener'; a.textContent = l.t; li.appendChild(a); fl.appendChild(li);
-    });
-    $('#year').textContent = num(new Date().getFullYear());
-    $('#footerLockup').innerHTML = '<img src="assets/brand/tada-wordmark-tagline_purple.svg" alt="" width="240" height="177">';
-    paintSound();
-  }
-
-  // ---------- the menu track: labels in the kit palette ----------
-  // the ring of the label in front lights up as the menu slides
-  let dotOn = -1;
-  function setDot(k) {
-    const dots = $$('#menuDots i'); if (!dots.length) return;
-    k = Math.min(dots.length - 1, Math.max(0, k));
-    if (k === dotOn && dots[k].classList.contains('is-on')) return;
-    dotOn = k; dots.forEach((d, i) => d.classList.toggle('is-on', i === k));
-  }
-  // < and >: faint, on the product itself, each pointing to its own edge
-  const chevron = toRight => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${toRight ? 'M9 4.5L16.5 12L9 19.5' : 'M15 4.5L7.5 12L15 19.5'}"/></svg>`;
-  function buildMenu() {
-    const t = T(), track = $('#menuTrack');
-    $$('.label', track).forEach(n => n.remove());
-    $('#menuDots').innerHTML = '<i></i>'.repeat(t.menu.items.length);
-    dotOn = -1; setDot(0);
-    const rtl = t.dir === 'rtl';
-    t.menu.items.forEach(it => {
-      const lab = document.createElement('article');
-      lab.className = 'label';
-      lab.tabIndex = 0; lab.setAttribute('aria-haspopup', 'dialog');
-      lab.dataset.tone = it.tone;
-      if (it.kind === 'pack') {
-        const p = t.product;
-        lab.innerHTML = `<div class="pack-grid"><svg class="pouch" viewBox="0 0 320 440" aria-hidden="true"></svg><div class="pack-text">
-          <h3 class="label-name"></h3><p class="label-sub"></p>
-          <dl class="specs"></dl><p class="pack-note flag"></p><div class="rulers"></div>
-          <p class="pack-cta"><a class="glass" href="${SITE.shop}" rel="noopener"></a></p></div></div>`;
-        $('.label-name', lab).textContent = p.title;
-        $('.label-sub', lab).textContent = p.size;
-        $('.pack-note', lab).textContent = p.profileFlag;
-        $('.pack-note', lab).title = p.profileNote;
-        $('.pack-cta a', lab).textContent = p.cta;
-        const specs = $('.specs', lab);
-        p.specs.forEach(([k, v]) => { const dt = document.createElement('dt'), dd = document.createElement('dd'); dt.textContent = k; dd.textContent = v; specs.append(dt, dd); });
-        const rulers = $('.rulers', lab);
-        p.profile.forEach(([label, v]) => {
-          const row = document.createElement('div'); row.className = 'ruler';
-          const idx = Math.min(9, Math.max(0, Math.round(v / 10) - 1));
-          row.innerHTML = `<span></span><span class="ruler-scale" aria-hidden="true">${'<i></i>'.repeat(10)}</span><span class="ruler-val"></span>`;
-          row.firstChild.textContent = label; row.lastChild.textContent = num(v);
-          row.querySelectorAll('i')[idx].classList.add('is-val');
-          row.setAttribute('aria-label', `${label} ${v}`);
-          rulers.appendChild(row);
-        });
-        buildPouch($('.pouch', lab));
-      } else {
-        lab.innerHTML = `${sparkSvg('label-spark')}<h3 class="label-name"></h3><p class="label-sub"></p><p class="label-note"></p><div class="label-band" aria-hidden="true">${tileSvg().repeat(6)}</div>`;
-        $('.label-name', lab).textContent = it.name;
-        $('.label-sub', lab).textContent = it.sub;
-        $('.label-note', lab).textContent = it.note;
-      }
-      dressLabel(lab);
-      // prev sits at the start edge and next at the end edge (right and left in Persian)
-      lab.insertAdjacentHTML('beforeend',
-        `<button class="label-arrow is-prev" type="button" data-dir="-1" data-sfx="none" tabindex="-1" aria-label="${t.menu.prev}">${chevron(rtl)}</button>` +
-        `<button class="label-arrow is-next" type="button" data-dir="1" data-sfx="none" tabindex="-1" aria-label="${t.menu.next}">${chevron(!rtl)}</button>`);
-      track.appendChild(lab);
-    });
-  }
-
-  // the 1 kg pouch: kit lockup on a white label, and a shippo band that lights up
-  function buildPouch(svg) {
-    svg.replaceChildren();
-    const g = el('g', {}, svg);
-    el('path', { d: 'M40 62 L280 62 L286 400 Q286 420 266 420 L54 420 Q34 420 34 400 Z', fill: '#662482' }, g);
-    el('path', { d: 'M40 40 H280 V62 H40 Z', fill: '#35084C' }, g);
-    [70, 110, 150, 190, 230].forEach(x => el('path', { d: `M${x} 44 V58`, stroke: '#662482', 'stroke-width': 2, 'stroke-linecap': 'round' }, g));
-    el('path', { d: 'M54 400 Q160 412 266 400', fill: 'none', stroke: '#35084C', 'stroke-width': 2 }, g);
-    el('rect', { x: 70, y: 110, width: 180, height: 240, rx: 6, fill: '#FFFFFF' }, g);
-    el('image', { href: 'assets/brand/tada-lockup-horizontal_purple.svg', x: 90, y: 122, width: 140, height: 100, preserveAspectRatio: 'xMidYMid meet' }, g);
-    const band = el('g', { class: 'pouch-band' }, g);
-    for (let i = 0; i < 6; i++) {
-      const tile = el('svg', { x: 70 + i * 30, y: 236, width: 30, height: 30, viewBox: '0 0 100 100', class: 'pouch-tile' }, band);
-      el('path', { d: BRAND.patternTile.d, 'fill-rule': 'evenodd', fill: '#662482' }, tile);
-      tile.style.opacity = reduce ? 1 : 0;
-      tile.style.transition = 'opacity .6s cubic-bezier(.16,1,.3,1)';
-    }
-    el('rect', { x: 70, y: 282, width: 180, height: 68, fill: '#678438' }, g);
-    const p = T().product.pack;
-    const tx = (y, size, w, s) => { const n = el('text', { x: 160, y, 'text-anchor': 'middle', 'font-size': size, 'font-weight': w }, g); n.textContent = s; };
-    tx(304, 14, 500, p.label); tx(325, 12.5, 300, p.sub); tx(345, 12.5, 400, p.weight);
+    $$('.lang-toggle').forEach(b => { b.lang = lang === 'fa' ? 'en' : 'fa'; b.setAttribute('aria-label', t.langName); });
+    $('#door').setAttribute('aria-label', 'تادا، TADA');
+    if (door.arch) door.arch.setAttribute('d', archD());
+    $('#muralImg').alt = t.glass.alt;
+    $$('.tt-h[data-tt]').forEach(buildHeadline);
+    buildPack(); buildMenu(); buildSteps(); buildCollab();
+    paintStatus(); paintSound(); frameAll();
+    requestAnimationFrame(fitAll);
   }
 
   // ======================================================================
-  // The Tada magic: geometry
+  // The door: the logo of the glass, drawn by its own lines
   // ======================================================================
-  const R0 = 22;                                   // corner radius of every turn
-  const beadR = () => (small() ? 9 : 12);          // star beads threaded on the line
-  const H_BUDGET = len => Math.max(48, len * 0.16); // scroll px per px of sideways ink
+  const door = { svg: null, arch: null, hand: [], stars: [], words: [], mask: [], foot: null };
+  function buildDoor() {
+    const A = ART.arch, H = ART.hand, F = ART.wordFa, E = ART.wordEn;
+    const svg = el('svg', { viewBox: A.vb.join(' '), 'aria-hidden': 'true', focusable: 'false' });
+    const off = p => `translate(${(p.at[0] - A.at[0]).toFixed(1)} ${(p.at[1] - A.at[1]).toFixed(1)})`;
+    door.arch = el('path', { d: archD(), class: 's', 'stroke-width': 9.85 }, svg);
+    // the hand: its sparkles, and the hand itself shown through its own centerline as it writes
+    const defs = el('defs', {}, svg);
+    const mask = el('mask', { id: 'handMask', maskUnits: 'userSpaceOnUse', x: -200, y: -200, width: 2000, height: 2200 }, defs);
+    const mg = el('g', { transform: `translate(${H.mask.t[0]} ${H.mask.t[1]})` }, mask);
+    door.mask = H.mask.p.map(d => el('path', { d, fill: 'none', stroke: '#fff', 'stroke-width': 44, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, mg));
+    const hg = el('g', { transform: off(H) }, svg);
+    const handG = el('g', { mask: 'url(#handMask)' }, hg);
+    H.p.forEach(([d, k], i) => {
+      if (i < 3) door.stars.push(el('path', { d, class: 'f' }, hg));
+      else door.hand.push(el('path', { d, class: 'f' }, handG));
+    });
+    const wf = el('g', { transform: off(F) }, svg), we = el('g', { transform: off(E) }, svg);
+    door.words = [
+      ...F.p.map(([d, k, w]) => el('path', { d, class: k ? 'f' : 's', 'stroke-width': 9.85 * (w || 1) }, wf)),
+      ...E.p.map(([d, k, w]) => el('path', { d, class: k ? 'f' : 's', 'stroke-width': 9.85 * (w || 1) }, we)),
+    ];
+    $('#door').prepend(svg);
+    door.svg = svg;
+    // the lowest sparkle is the magic itself
+    door.low = door.stars.slice().sort((a, b) => b.getBBox().y - a.getBBox().y)[0];
+    // the nav mark: the same hand, small
+    const nm = el('svg', { viewBox: `${-8} ${-8} ${H.vb[2] + 16} ${H.vb[3] + 16}`, 'aria-hidden': 'true' });
+    H.p.forEach(([d]) => el('path', { d, class: 'f' }, nm));
+    $('#navMark').appendChild(nm);
+  }
+  // The arch (the designer's: a closed line, its right side a hair off plumb), started at the
+  // bottom corner on the far side of the reading direction: up, over, down, and the threshold
+  // last, so it ends exactly where the line of the page begins.
+  function archD() {
+    return RTL()
+      ? 'M9.8 1718.2V710.9C9.8 323.7 306.8 9.8 673.1 9.8C1039.4 9.8 1336.3 323.7 1336.3 710.9L1342.9 1718.2H9.8'
+      : 'M1342.9 1718.2L1336.3 710.9C1336.3 323.7 1039.4 9.8 673.1 9.8C306.8 9.8 9.8 323.7 9.8 710.9V1718.2H1342.9';
+  }
+  function archFeet() {
+    const p = door.arch, L = p.getTotalLength();
+    return { L, end: p.getPointAtLength(L) };
+  }
+  function dash(p, L, shown) { p.style.strokeDasharray = `${L} ${L}`; p.style.strokeDashoffset = shown ? 0 : L; }
 
-  // A pen that lays a chain of links on an svg, each link starting exactly where the
-  // previous one ended, so the line can never break. Headings: S (down), F (toward
-  // the far edge), B (back toward the start edge).
+  // ======================================================================
+  // The line: a pen that never lifts, and the chains it lays in each part
+  // ======================================================================
+  const R0 = 18;
+  const beadR = () => (small() ? 8 : 11);
+  const H_BUDGET = len => Math.max(40, Math.min(220, len * 0.14));
   function makePen(svg, x, y, heading, sgn) {
     const V = { S: [0, 1], N: [0, -1], F: [sgn, 0], B: [-sgn, 0] };
     const links = [];
@@ -207,20 +295,21 @@
       links, V,
       get x() { return x; }, get y() { return y; }, get h() { return h; },
       line(dist, budget, extra) {
-        if (dist <= 0.5) { if (!(budget > 0)) return api; dist = 0.6; }   // too short to see, but it keeps its time
+        if (dist <= 0.5) { if (!(budget > 0)) return api; dist = 0.6; }
         const [vx, vy] = V[h], x2 = x + vx * dist, y2 = y + vy * dist;
         push([part(mk(`M${x} ${y}L${x2} ${y2}`))], budget ?? auto(vx, dist), extra);
         x = x2; y = y2; return api;
       },
       turn(to, budget, r = R0) {
         const [hx, hy] = V[h], [nx, ny] = V[to];
+        if (r <= 0) { h = to; return api; }       // a square corner: the next run starts here
         const x2 = x + hx * r + nx * r, y2 = y + hy * r + ny * r;
         const sweep = hx * ny - hy * nx > 0 ? 1 : 0;
         push([part(mk(`M${x} ${y}A${r} ${r} 0 0 ${sweep} ${x2} ${y2}`))], budget ?? r * 1.2);
         x = x2; y = y2; h = to; return api;
       },
-      // A hollow kit-style sparkle threaded on the line: the pen splits around it.
-      bead(budget, r = beadR()) {
+      // a hollow sparkle threaded on the line: the pen splits around it
+      bead(budget, r = beadR(), extra) {
         const [dx, dy] = V[h], px = -dy, py = dx, w = r * 0.8, k = 0.58;
         const A = [x, y], O = [x + dx * r, y + dy * r], B = [x + dx * 2 * r, y + dy * 2 * r];
         const half = s => {
@@ -229,68 +318,28 @@
           const [a1, a2, b1, b2] = [c(A, k), c(S, k), c(S, k), c(B, k)];
           return `M${A[0]} ${A[1]}C${a1[0]} ${a1[1]} ${a2[0]} ${a2[1]} ${S[0]} ${S[1]}C${b1[0]} ${b1[1]} ${b2[0]} ${b2[1]} ${B[0]} ${B[1]}`;
         };
-        push([part(mk(half(1), 'ink-link ink-bead')), part(mk(half(-1)))], budget ?? auto(dx, 2 * r));
+        push([part(mk(half(1), 'ink-link ink-bead')), part(mk(half(-1)))], budget ?? auto(dx, 2 * r), extra);
         x = B[0]; y = B[1]; return api;
       },
-      // A row of semicircles alternating over and under the line: the edge of the shippo tiles.
-      shippo(n, D, budget, extra) {
-        if (n <= 0) return api;
-        const [vx] = V[h]; const r = D / 2; let d = `M${x} ${y}`, cx = x;
-        for (let i = 0; i < n; i++) { cx += vx * D; const over = i % 2 === 0; d += `A${r} ${r} 0 0 ${over === (vx > 0) ? 1 : 0} ${cx} ${y}`; }
-        push([part(mk(d))], budget ?? H_BUDGET(n * D), extra);
-        x = cx; return api;
-      },
-      // The shippo lattice (overlapping circles, the kit pattern) drawn as one stroke:
-      // rows of circles traced under-then-over, joined by quarter arcs. Enters and leaves
-      // heading down at the same x, so it threads onto a vertical run without a seam.
-      lattice(rows, n, r, budget) {
-        const x0 = x, y0 = y, X = u => x0 + sgn * u;
-        let d = `M${x} ${y}`;
-        const semi = (u1, u2, yy, over) => { const dir = Math.sign(sgn * (u2 - u1)); d += `A${r} ${r} 0 0 ${over === (dir > 0) ? 1 : 0} ${X(u2)} ${yy}`; };
-        const quarter = (pu, py, qu, qy, cu, cy) => {
-          const ax = X(pu) - X(cu), ay = py - cy, bx = X(qu) - X(cu), by = qy - cy;
-          d += `A${r} ${r} 0 0 ${ax * by - ay * bx > 0 ? 1 : 0} ${X(qu)} ${qy}`;
-        };
-        for (let k = 0; k < rows; k++) {
-          const odd = k % 2, yk = y0 + r * k, count = n - odd, us = r * odd;
-          for (let i = 0; i < count; i++) semi(us + 2 * r * i, us + 2 * r * (i + 1), yk, false);
-          for (let i = count; i > 0; i--) semi(us + 2 * r * i, us + 2 * r * (i - 1), yk, true);
-          if (k < rows - 1) {
-            if (!odd) quarter(0, yk, r, yk + r, r, yk);
-            else quarter(r, yk, 0, yk + r, r, yk + r);
-          }
-        }
-        push([part(mk(d))], budget);
-        y = y0 + r * (rows - 1); h = 'S'; return api;
+      // a station: a bead that wakes something when the pen reaches it
+      station(onReach, budget) {
+        let on = false;
+        api.bead(budget, beadR(), { onProgress: f => { const v = f >= 0.5; if (v === on) return; on = v; onReach(v); } });
+        return api;
       },
       cubic(c1, c2, end, budget, nextHeading) {
         const p = mk(`M${x} ${y}C${c1[0]} ${c1[1]} ${c2[0]} ${c2[1]} ${end[0]} ${end[1]}`);
         push([part(p)], budget ?? p.getTotalLength());
         x = end[0]; y = end[1]; if (nextHeading) h = nextHeading; return api;
       },
-      // pen in the air: the head travels, no ink is laid
-      hop(end, budget) {
-        const mx = (x + end[0]) / 2, my = (y + end[1]) / 2 - Math.max(10, Math.hypot(end[0] - x, end[1] - y) * 0.35);
-        const p = mk(`M${x} ${y}Q${mx} ${my} ${end[0]} ${end[1]}`, 'ink-ghost');
-        push([part(p)], budget ?? p.getTotalLength() * 0.3);
-        x = end[0]; y = end[1]; return api;
-      },
-      // an existing stroke (the footer hand), drawn forward or reversed
-      stroke(p, ulen, reverse, budget, end) {
-        push([part(p, reverse, ulen)], budget);
-        x = end[0]; y = end[1]; return api;
-      },
       to(y2, budget, extra) { return api.line(Math.abs(y2 - y), budget, extra); },
+      toX(x2, budget, extra) { return api.line(Math.abs(x2 - x), budget, extra); },
     };
     return api;
   }
 
-  // ======================================================================
-  // The Tada magic: drawing, the head and its sparkles
-  // ======================================================================
-  const chains = [];          // in page order: { name, links, p, dark, host }
-  let parked = false, birthDone = false, siteReady = false;
-
+  const chains = [];
+  let parked = false, siteReady = false, quiet = false, started = false;
   function setLink(l, f) {
     if (f === l.f) return;
     l.f = f;
@@ -303,8 +352,7 @@
   }
   function primeLink(l) {
     for (const pt of l.parts) {
-      pt.el.__rev = !!pt.reverse;
-      pt.el.style.strokeDasharray = pt.ulen + 'px';
+      pt.el.style.strokeDasharray = pt.ulen + 'px ' + (pt.ulen + 2) + 'px';
       pt.el.style.strokeDashoffset = (pt.reverse ? -pt.ulen : pt.ulen) + 'px';
       pt.el.style.opacity = 0;
     }
@@ -324,8 +372,6 @@
   }
   const startOf = c => { const pt = c.links[0].parts[0]; return { el: pt.el, len: pt.reverse ? pt.ulen : 0 }; };
   const endOf = c => { const pt = c.links[c.links.length - 1].parts[0]; return { el: pt.el, len: pt.reverse ? 0 : pt.ulen }; };
-
-  // where the pen is now: the first unfinished chain decides
   function frontier() {
     for (let i = 0; i < chains.length; i++) {
       const c = chains[i];
@@ -339,158 +385,205 @@
     const p = elm.getPointAtLength(len), m = elm.getScreenCTM();
     return { x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f, lx: p.x, ly: p.y, s: Math.hypot(m.a, m.b) };
   };
+  function addChain(name, host, pen, extra = {}) {
+    const c = { name, host, links: pen.links, p: 0, raw: 0, tip: null, dark: host.dataset.surface === 'night', ...extra };
+    c.links.forEach(primeLink);
+    chains.push(c);
+    return c;
+  }
+  // Two scrubbed chains can be in motion at once; the furthest one that has started
+  // decides: every chain before it is whole, every chain after it empty. No holes.
+  function resolve() {
+    let k = -1;
+    chains.forEach((c, i) => { if ((c.raw || 0) > 0) k = i; });
+    chains.forEach((c, i) => {
+      const want = i < k ? 1 : i > k ? 0 : c.raw;
+      if (want !== c.p) draw(c, want);
+    });
+    endingCheck();
+  }
+  const triggers = [];
+  function lineTrigger(c, opts) {
+    const proxy = { p: 0 };
+    // reduced motion: the line is simply there, whole and still
+    if (reduce) { c.raw = 1; resolve(); return null; }
+    const tw = gsap.to(proxy, {
+      p: 1, ease: 'none',
+      scrollTrigger: { trigger: c.host, scrub: fine ? 1.1 : 1.6, invalidateOnRefresh: true, ...opts },
+      onUpdate: () => { c.raw = proxy.p; resolve(); },
+    });
+    triggers.push(tw);
+    return tw;
+  }
+  // a chain is laid so that its head rides at the reading height (62% of the screen):
+  // it starts when its first point reaches that height and lasts its whole budget
+  const READ = 0.62;
+  const chainRange = (c, y0 = 0) => {
+    const total = c.links.reduce((s, l) => s + l.budget, 0);
+    return { start: () => `top+=${Math.round(y0)} ${Math.round(READ * 100)}%`, end: () => `+=${Math.round(total)}` };
+  };
 
-  // the head
+  function sizeSvg(svg, w, h) {
+    svg.setAttribute('width', w); svg.setAttribute('height', h);
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.replaceChildren();
+    svg.classList.remove('has-sky');
+  }
+  const rel = (r, o) => ({ x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height, r: r.right - o.left, b: r.bottom - o.top });
+  // the two rails of the page: S on the reading start side, E on the far side
+  function rails() {
+    const box = $('#morning .container'), c = box.getBoundingClientRect(), W = vw();
+    const pad = parseFloat(getComputedStyle(box).paddingLeft) || 64;
+    const off = Math.max(10, Math.min(pad * 0.42, 30));
+    const left = Math.max(10, c.left + off), right = Math.min(W - 10, c.right - off);
+    return RTL() ? { S: right, E: left } : { S: left, E: right };
+  }
+  // the line in a sky band goes from one light to the other
+  function skyGradient(svg, id, h, from, to) {
+    const g = el('linearGradient', { id, gradientUnits: 'userSpaceOnUse', x1: 0, y1: 0, x2: 0, y2: h }, el('defs', {}, svg));
+    [[0, from], [0.36, from], [0.7, to], [1, to]].forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, g));
+    svg.classList.add('has-sky');
+    svg.style.setProperty('--sky-id', `url(#${id})`);
+  }
+  const CREAM = '#F6F0F8', PURPLE = '#662482';
+
+  // ======================================================================
+  // The head of the line, and the sparkles it sheds
+  // ======================================================================
   const magic = $('#magic');
-  magic.innerHTML = `<svg viewBox="0 0 44 44"><defs><radialGradient id="mg"><stop offset="0" stop-color="currentColor" stop-opacity=".6"/><stop offset=".45" stop-color="currentColor" stop-opacity=".2"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient></defs>
+  magic.innerHTML = `<svg viewBox="0 0 44 44"><defs><radialGradient id="mg"><stop offset="0" stop-color="currentColor" stop-opacity=".55"/><stop offset=".45" stop-color="currentColor" stop-opacity=".18"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></radialGradient></defs>
     <circle class="m-glow" cx="22" cy="22" r="21" fill="url(#mg)"/>
-    <g class="m-spin"><path class="m-star" d="${LOW.d}" transform="translate(22 22) scale(.42) translate(${-LOW.cx} ${-LOW.cy})"/></g>
-    <circle class="m-core" cx="22" cy="22" r="1.6"/></svg>`;
+    <g class="m-spin"><path class="m-star" d="${STAR_D}" transform="translate(22 22) scale(7.2)"/></g>
+    <circle class="m-core" cx="22" cy="22" r="1.5"/></svg>`;
   const headState = { x: -100, y: -100, shown: false, lastLX: null, lastLY: null, lastEl: null, idle: 0 };
-
-  // the sparkles it sheds: a canvas over the page, particles anchored to the path they came from
   const dust = $('#magicDust'), ctx = dust.getContext('2d');
-  const starPath = new Path2D(LOW.d);
   let dpr = 1, particles = [];
-  function sizeDust() { const de = document.documentElement; dpr = Math.min(fine ? 2 : 1.5, devicePixelRatio || 1); dust.width = Math.round(de.clientWidth * dpr); dust.height = Math.round(de.clientHeight * dpr); }
+  function sizeDust() { dpr = Math.min(fine ? 2 : 1.5, devicePixelRatio || 1); dust.width = Math.round(vw() * dpr); dust.height = Math.round(innerHeight * dpr); }
   sizeDust();
-  // el: the path a particle belongs to (it then scrolls with the page); null = screen space
   function spawn(elm, lx, ly, dark, burst = 1, o = {}) {
-    const { spread = 6, speed = 26, sizeMin = 2, sizeMax = 4.6, bigChance = 0.25, life = 0.8, rise = 8, radial = false } = o;
+    const { spread = 6, speed = 26, sizeMin = 2, sizeMax = 4.4, bigChance = 0.22, life = 0.8, rise = 8, radial = false } = o;
     for (let i = 0; i < burst; i++) {
       if (particles.length > 120) particles.shift();
-      const big = Math.random() < bigChance;
-      const a = radial ? (i / burst) * Math.PI * 2 + Math.random() * 0.6 : 0;
+      const big = Math.random() < bigChance, a = radial ? (i / burst) * Math.PI * 2 + Math.random() * 0.6 : 0;
       particles.push({
-        el: elm, lx: lx + (Math.random() - 0.5) * spread, ly: ly + (Math.random() - 0.5) * spread,
-        dx: 0, dy: 0,
+        el: elm, lx: lx + (Math.random() - 0.5) * spread, ly: ly + (Math.random() - 0.5) * spread, dx: 0, dy: 0,
         vx: radial ? Math.cos(a) * speed * (0.6 + Math.random() * 0.6) : (Math.random() - 0.5) * speed,
         vy: radial ? Math.sin(a) * speed * (0.6 + Math.random() * 0.6) - rise : -rise - Math.random() * speed,
-        size: big ? sizeMax + 1 + Math.random() * 3 : sizeMin + Math.random() * (sizeMax - sizeMin), rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 3,
+        size: big ? sizeMax + 1 + Math.random() * 2.5 : sizeMin + Math.random() * (sizeMax - sizeMin), rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 2.4,
         life: 0, max: life + Math.random() * 0.9 * life, dark, hue: Math.random() < 0.5, keep: !!o.keep,
       });
     }
   }
-  // ---------- the logo stays the kit's own: no loose sparkles around it ----------
-  // Free sparkles (the head's, the motes, the twinkles) vanish inside these zones, so the
-  // footer hand shows exactly the mark with its three sparkles, and the logotype stays clean.
+  // the logo stays exactly the designer's: no loose sparkles around it
   let zones = [];
   function zoneRects() {
     zones = [];
-    for (const s of ['#footerHand', '#heroWord', '#navMark']) {
+    for (const s of ['#door', '#navMark']) {
       const n = $(s); if (!n) continue;
       const r = n.getBoundingClientRect();
-      if (r.width && r.bottom > -40 && r.top < innerHeight + 40) zones.push([r.left - 20, r.top - 20, r.right + 20, r.bottom + 20]);
+      if (r.width && r.bottom > -40 && r.top < innerHeight + 40) zones.push([r.left - 16, r.top - 16, r.right + 16, r.bottom + 16]);
     }
   }
   const inZone = (x, y) => zones.some(z => x > z[0] && x < z[2] && y > z[1] && y < z[3]);
-  // sparkles shed on the line stay on the line
-  const HUG = { spread: 1.5, speed: 7, rise: 2.5, sizeMin: 1.6, sizeMax: 3.4, bigChance: 0.12, life: 0.75 };
-  // the cursor, for the line's response and the parallax
-  const mouse = { x: -1e4, y: -1e4, on: false };
-  addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; mouse.x = e.clientX; mouse.y = e.clientY; mouse.on = true; }, { passive: true });
-  document.documentElement.addEventListener('mouseleave', () => { mouse.on = false; });
+  const HUG = { spread: 1.5, speed: 7, rise: 2.5, sizeMin: 1.5, sizeMax: 3.2, bigChance: 0.1, life: 0.75 };
 
-  // ---------- product labels: the magic frames them ----------
-  // When the pen reaches a label, a thin frame draws itself around it, the label lifts off
-  // the paper with a sweep of light, four kit sparkles open at the corners, and it settles.
-  const starMini = cls => `<svg class="${cls}" viewBox="${LOW.cx - LOW.r} ${LOW.cy - LOW.r} ${2 * LOW.r} ${2 * LOW.r}" aria-hidden="true"><path d="${LOW.d}"/></svg>`;
-  function dressLabel(lab) {
-    lab.insertAdjacentHTML('beforeend',
-      `<svg class="label-frame" aria-hidden="true"><rect x="0" y="0" width="100%" height="100%" pathLength="1"/></svg>` +
-      `<span class="label-light" aria-hidden="true"><i class="label-sheen"></i><i class="label-glare"></i></span>` +
-      ['ts', 'te', 'bs', 'be'].map(c => `<span class="label-corner is-${c}" aria-hidden="true">${starMini('')}</span>`).join(''));
-    gsap.set($$('.label-corner', lab), { scale: 0, opacity: 0 });
-    if (reduce || !matchMedia('(pointer: fine)').matches) return;
-    // the label leans toward the cursor and a soft light follows it
-    gsap.set(lab, { transformPerspective: 1000 });
-    const rx = gsap.quickTo(lab, 'rotationX', { duration: 0.7, ease: 'power3.out' });
-    const ry = gsap.quickTo(lab, 'rotationY', { duration: 0.7, ease: 'power3.out' });
-    lab.addEventListener('pointermove', e => {
-      const r = lab.getBoundingClientRect(), u = (e.clientX - r.left) / r.width - 0.5, v = (e.clientY - r.top) / r.height - 0.5;
-      rx(-v * 6); ry(u * 6);
-      lab.style.setProperty('--gx', `${(u + 0.5) * 100}%`); lab.style.setProperty('--gy', `${(v + 0.5) * 100}%`);
-      lab.classList.add('is-hover');
-    });
-    lab.addEventListener('pointerleave', () => { rx(0); ry(0); lab.classList.remove('is-hover'); });
-  }
-  const restShadow = '0 22px 50px -32px rgba(53, 8, 76, .38), 0 6px 18px -12px rgba(53, 8, 76, .12)';
-  function frameLabel(lab, on) {
-    const rect = $('.label-frame rect', lab), corners = $$('.label-corner', lab), sheen = $('.label-sheen', lab);
-    if (!rect) return;
-    if (lab.__ftl) lab.__ftl.kill();
-    lab.classList.toggle('is-framed', on);
-    if (reduce) { gsap.set(rect, { strokeDashoffset: on ? 0 : 1 }); gsap.set(corners, { scale: on ? 1 : 0, opacity: on ? 1 : 0 }); return; }
-    const tl = lab.__ftl = gsap.timeline();
-    // slow and calm: the frame draws, the label lifts with a sweep of light, settles
-    const lift = fine ? { y: -12, scale: 1.025, boxShadow: '0 48px 90px -34px rgba(53, 8, 76, .5), 0 8px 22px -12px rgba(53, 8, 76, .16)' } : { y: -8, scale: 1.02 };
-    const rest = fine ? { y: 0, scale: 1, boxShadow: restShadow } : { y: 0, scale: 1 };
-    if (on) {
-      tl.to(rect, { strokeDashoffset: 0, duration: 1.9, ease: 'power2.inOut' }, 0)
-        .to(lab, { ...lift, duration: 1.0, ease: 'power2.out' }, 0.15)
-        .fromTo(sheen, { xPercent: -140, opacity: 1 }, { xPercent: 260, duration: 1.9, ease: 'power1.inOut' }, 0.25)
-        .fromTo(corners, { scale: 0, rotation: -45, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.9, stagger: 0.14, ease: 'back.out(2)' }, 1.0)
-        .add(() => { const fr = $('.label-frame', lab); spawn(fr, 0, 0, false, fine ? 4 : 2, { radial: true, speed: 18, spread: 2, life: 0.9, rise: 0 }); }, 1.05)
-        .to(lab, { ...rest, duration: 1.5, ease: 'power2.inOut' }, 1.4);
-    } else {
-      tl.to(corners, { scale: 0, opacity: 0, duration: 0.4, ease: 'power2.in' }, 0)
-        .to(rect, { strokeDashoffset: 1, duration: 0.8, ease: 'power2.inOut' }, 0)
-        .to(lab, { y: 0, scale: 1, duration: 0.6 }, 0)
-        .set(lab, { clearProps: 'boxShadow' });
+  let lastT = performance.now(), zoneT = 0;
+  function tick() {
+    const now = performance.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
+    if (siteReady) checkCards();
+    if (!siteReady || reduce) return;
+    if ((zoneT += dt) > 0.25) { zoneT = 0; zoneRects(); }
+    const fr = parked ? null : frontier();
+    if (fr) {
+      const sp = screenPoint(fr.at.el, fr.at.len);
+      headState.x = sp.x; headState.y = sp.y;
+      magic.style.transform = `translate3d(${sp.x.toFixed(1)}px, ${sp.y.toFixed(1)}px, 0)`;
+      const c = fr.chain;
+      const dk = c.sky ? (c.sky.dark === 'top' ? sp.ly < c.sky.at : sp.ly > c.sky.at) : !!c.dark;
+      magic.classList.toggle('on-dark', dk);
+      if (!headState.shown) { headState.shown = true; gsap.to(magic, { opacity: 1, duration: 0.8, ease: 'power2.out' }); }
+      if (headState.lastEl === fr.at.el && headState.lastLX != null) {
+        const d = Math.hypot(sp.lx - headState.lastLX, sp.ly - headState.lastLY) * sp.s;
+        if (d > 8) { spawn(fr.at.el, sp.lx, sp.ly, dk, d > 30 ? 2 : 1, HUG); headState.lastLX = sp.lx; headState.lastLY = sp.ly; headState.idle = 0; }
+      } else { headState.lastEl = fr.at.el; headState.lastLX = sp.lx; headState.lastLY = sp.ly; }
+      if ((headState.idle += dt) > 0.6) { headState.idle = 0; spawn(fr.at.el, sp.lx, sp.ly, dk, 1, HUG); }
     }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, dust.width, dust.height);
+    if (!particles.length) return;
+    const ctm = new Map();
+    const M = e => { let m = ctm.get(e); if (m === undefined) { m = e.getScreenCTM(); ctm.set(e, m); } return m; };
+    particles = particles.filter(p => (p.life += dt) < p.max);
+    for (const p of particles) {
+      let m = null;
+      if (p.el) { m = M(p.el); if (!m) continue; }
+      p.dx += p.vx * dt; p.dy += p.vy * dt; p.vy += 10 * dt; p.vx *= 0.985; p.rot += p.vr * dt;
+      const x = m ? m.a * p.lx + m.c * p.ly + m.e + p.dx : p.lx + p.dx, y = m ? m.b * p.lx + m.d * p.ly + m.f + p.dy : p.ly + p.dy;
+      if (!p.keep && inZone(x, y)) { p.life = p.max; continue; }
+      const t = p.life / p.max, a = Math.sin(Math.PI * Math.min(1, t * 1.4)) * (0.65 + 0.35 * Math.sin(now / 70 + p.size * 7));
+      const sc = p.size * (1 - t * 0.55);
+      ctx.globalCompositeOperation = p.dark ? 'lighter' : 'source-over';
+      ctx.globalAlpha = Math.max(0, a);
+      ctx.fillStyle = p.dark ? (p.hue ? '#FFFFFF' : '#CDB8D8') : (p.hue ? '#662482' : '#926D8F');
+      const c = Math.cos(p.rot) * sc * dpr, s = Math.sin(p.rot) * sc * dpr;
+      ctx.setTransform(c, s, -s, c, x * dpr, y * dpr);
+      ctx.fill(starPath);
+    }
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   }
-  // ---------- the products: one in the centre at a time ----------
-  // The product nearest the centre is the one in front: its dot lights, and once the pen
-  // has passed under it and it has come to rest in the middle, its frame draws and its
-  // magic wakes; the others stay calm. Scrolling stops on a product (snap), sideways
-  // swipes, a trackpad's sideways scroll, the arrow keys and the two arrows all move one
-  // product at a time.
-  let menuActive = -1, menuGeom = null;
+  gsap.ticker.add(tick);
+  window.__tada = { chains, frontier, screenPoint }; // inspection hook
+
+  // ======================================================================
+  // The menu: one flavor at a time
+  // ======================================================================
+  let menuActive = -1, menuPin = null, menuTween = null;
   const $menu = $('#menu');
-  function checkLabels() {
-    const hr = $menu.getBoundingClientRect(), H = innerHeight;
-    if (hr.bottom < 0 || hr.top > H) {   // off screen: a frame only goes when the line has gone back past it
-      for (const lab of $$('#menuTrack .label.is-framed')) if (lab.__shown && !lab.__want) { lab.__shown = false; frameLabel(lab, false); }
-      return;
-    }
-    const labs = $$('#menuTrack .label'); if (!labs.length) return;
-    const cx = document.documentElement.clientWidth / 2;
+  function checkCards() {
+    const r = $menu.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return;
+    const cards = $$('#menuTrack .card'); if (!cards.length) return;
+    const cx = vw() / 2;
     let best = 0, bd = Infinity;
-    const rs = labs.map((lab, i) => { const r = lab.getBoundingClientRect(), d = Math.abs((r.left + r.right) / 2 - cx); if (d < bd) { bd = d; best = i; } return r; });
-    if (best !== menuActive) { menuActive = best; setDot(best); paintArrows(labs); }
-    labs.forEach((lab, i) => {
-      const r = rs[i], d = Math.abs((r.left + r.right) / 2 - cx);
-      const upright = r.bottom <= H + 2 && r.bottom > 0;   // fully risen into view (it may already be leaving at the top)
-      const arrive = i === best && d < Math.max(24, r.width * 0.06);          // at rest in the middle
-      const stay = !!lab.__shown && i === best && d < r.width * 0.3;          // and it stays until it leaves
-      const on = !!lab.__want && ((upright && arrive) || stay);   // it stays dressed as the page moves on
-      if (on === !!lab.__shown) return;
-      lab.__shown = on;
-      frameLabel(lab, on);
-      if (on) sfx.tile(lab.__i || 0);
-    });
-  }
-  // only the product in front shows its < >; the first has no back, the last no forward
-  function paintArrows(labs) {
-    labs.forEach((lab, i) => {
-      const on = i === menuActive;
-      lab.classList.toggle('is-front', on);
-      $$('.label-arrow', lab).forEach(b => {
-        const end = (b.classList.contains('is-prev') && i === 0) || (b.classList.contains('is-next') && i === labs.length - 1);
+    cards.forEach((c, i) => { const b = c.getBoundingClientRect(), d = Math.abs((b.left + b.right) / 2 - cx); if (d < bd) { bd = d; best = i; } });
+    if (best === menuActive) return;
+    menuActive = best;
+    $$('#menuDots i').forEach((d, i) => d.classList.toggle('is-on', i === best));
+    cards.forEach((c, i) => {
+      const on = i === best;
+      c.classList.toggle('is-front', on);
+      c.setAttribute('aria-hidden', String(!on));
+      $$('.card-arrow', c).forEach(b => {
+        const end = (b.classList.contains('is-prev') && i === 0) || (b.classList.contains('is-next') && i === cards.length - 1);
         b.hidden = end; b.tabIndex = on ? 0 : -1;
       });
     });
+    const front = cards[best];
+    if (menuReached) wakeCard(front);
   }
-  // where the window must be for product i to sit in the centre
+  let menuReached = false;
+  // the flavors draw themselves when the line reaches the menu, the one in front first;
+  // each sounds its own note when it comes to the front
+  function wakeMenu() {
+    const cards = $$('#menuTrack .card'), k = Math.max(0, menuActive);
+    cards.map((c, i) => [c, Math.abs(i - k)]).sort((a, b) => a[1] - b[1]).forEach(([c, d]) => {
+      const a = $('.card-art svg.art', c), n = $('.card-name svg.tt', c);
+      if (a) drawArt(a, { dur: 1.6, delay: d * 0.35 });
+      if (n) drawArt(n, { dur: 0.9, delay: 0.25 + d * 0.35 });
+    });
+  }
+  function wakeCard(card) {
+    if (!card || card.__woke) return;
+    card.__woke = true;
+    if (siteReady && !quiet) sfx.tile(card.__i + 2);
+  }
   function menuSnapsY() {
-    if (!menuGeom || !menuPin) return [];
-    const a = menuPin.start, b = menuPin.end;
-    return menuGeom.ps.map(p => a + p * (b - a));
+    if (!menuPin) return [];
+    const n = $$('#menuTrack .card').length, a = menuPin.start, b = menuPin.end;
+    return Array.from({ length: n }, (_, i) => a + (n > 1 ? i / (n - 1) : 0) * (b - a));
   }
-  let snapTw = null, snapAt = -1;
+  let snapTw = null;
   function scrollToY(y, dur) {
     if (snapTw) { snapTw.kill(); snapTw = null; }
-    snapAt = y;
     if (lenis) { lenis.scrollTo(y, { duration: dur, easing: t => 1 - Math.pow(1 - t, 3) }); return; }
     const o = { y: scrollY };
     snapTw = gsap.to(o, { y, duration: dur, ease: 'power2.inOut', onUpdate: () => window.scrollTo(0, o.y), onComplete: () => { snapTw = null; } });
@@ -499,28 +592,28 @@
     const ys = menuSnapsY(); if (!ys.length) return;
     k = Math.max(0, Math.min(ys.length - 1, k));
     const from = menuActive < 0 ? k : menuActive;
-    scrollToY(ys[k], reduce ? 0.01 : Math.min(1.5, 0.75 + 0.22 * Math.abs(k - from)));
+    scrollToY(ys[k], reduce ? 0.01 : Math.min(1.5, 0.8 + 0.22 * Math.abs(k - from)));
   }
-  // when the scroll comes to rest inside the products, it settles on one, leaning the way it was going
+  // when the scroll comes to rest inside the menu, it settles on one flavor
   let idleT = 0, touching = false, restY = 0;
   function trySnap() {
-    if (touching || snapTw || reduce) return;
+    if (touching || snapTw || reduce || !menuPin) return;
     const ys = menuSnapsY(), y = scrollY; if (ys.length < 2) return;
     if (y < ys[0] - 1 || y > ys[ys.length - 1] + 1) { restY = y; return; }
     let i = 0; while (i < ys.length - 2 && y > ys[i + 1]) i++;
     const f = (y - ys[i]) / Math.max(1, ys[i + 1] - ys[i]), dir = Math.sign(y - restY);
     const k = dir > 0 ? (f > 0.18 ? i + 1 : i) : dir < 0 ? (f < 0.82 ? i : i + 1) : (f < 0.5 ? i : i + 1);
     restY = ys[k];
-    if (Math.abs(ys[k] - y) > 1.5) scrollToY(ys[k], 0.8);
+    if (Math.abs(ys[k] - y) > 1.5) scrollToY(ys[k], 0.85);
   }
-  const armSnap = () => { clearTimeout(idleT); idleT = setTimeout(trySnap, lenis ? 110 : 170); };
+  const armSnap = () => { clearTimeout(idleT); idleT = setTimeout(trySnap, lenis ? 120 : 180); };
   addEventListener('scroll', () => { if (!snapTw) armSnap(); }, { passive: true });
   addEventListener('touchstart', () => { touching = true; if (snapTw) { snapTw.kill(); snapTw = null; } }, { passive: true });
   addEventListener('touchend', () => { touching = false; armSnap(); }, { passive: true });
   addEventListener('touchcancel', () => { touching = false; armSnap(); }, { passive: true });
   addEventListener('wheel', () => { if (snapTw) { snapTw.kill(); snapTw = null; } }, { passive: true });
-  // a sideways swipe on the products moves one product (content follows the finger)
   {
+    const sgn = () => (RTL() ? -1 : 1);
     let x0 = 0, y0 = 0, side = null;
     $menu.addEventListener('touchstart', e => { const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; side = null; }, { passive: true });
     $menu.addEventListener('touchmove', e => {
@@ -533,1235 +626,382 @@
       const dx = e.changedTouches[0].clientX - x0; side = null;
       if (Math.abs(dx) < 32) return;
       touching = false;
-      goMenu(Math.max(0, menuActive) + (dx * SGN() < 0 ? 1 : -1));
+      goMenu(Math.max(0, menuActive) + (dx * sgn() < 0 ? 1 : -1));
     }, { passive: true });
-    // a trackpad's (or shift + wheel) sideways scroll: one product per gesture
     let acc = 0, lock = 0;
     $menu.addEventListener('wheel', e => {
       if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
       e.preventDefault(); e.stopPropagation();
       const now = performance.now(); if (now < lock) return;
       acc += e.deltaX; if (Math.abs(acc) < 36) return;
-      goMenu(Math.max(0, menuActive) + (acc * SGN() > 0 ? 1 : -1)); acc = 0; lock = now + 650;
+      goMenu(Math.max(0, menuActive) + (acc * sgn() > 0 ? 1 : -1)); acc = 0; lock = now + 650;
     }, { passive: false, capture: true });
     $('#menuTrack').addEventListener('click', e => {
-      const b = e.target.closest('.label-arrow'); if (!b) return;
+      const b = e.target.closest('.card-arrow'); if (!b) return;
       e.stopPropagation(); sfx.nav();
       goMenu(Math.max(0, menuActive) + Number(b.dataset.dir));
     }, true);
-    // the arrow keys, while the products fill the screen
     addEventListener('keydown', e => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       if (e.altKey || e.ctrlKey || e.metaKey || (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]'))) return;
       const r = $menu.getBoundingClientRect(); if (r.top > 2 || r.bottom < innerHeight - 2) return;
       e.preventDefault();
-      goMenu(Math.max(0, menuActive) + ((e.key === 'ArrowRight' ? 1 : -1) * SGN() > 0 ? 1 : -1));
+      goMenu(Math.max(0, menuActive) + ((e.key === 'ArrowRight' ? 1 : -1) * sgn() > 0 ? 1 : -1));
     });
   }
-
-  // ---------- one pattern sheet for the whole page ----------
-  // Every section carries the same faint shippo sheet, and each sheet is shifted so its
-  // tiles sit on one page-wide grid: across section edges and through the pinned scenes
-  // the pattern runs on as a single piece. The grid is the one the pen draws in the story:
-  // same circle size, and anchored on the drawn lattice, so where the magic draws the
-  // pattern it lands exactly on the faint one. Under the mouse a halo wakes the pattern, and a slower halo
-  // trails behind so the place the cursor left fades out gently; the halo is one shape in
-  // screen space, drawn into every section it touches, so it crosses edges unbroken.
-  const FIELD_HOSTS = ['#heroStage', '#story', '#menu', '#branches', '#collab', '#footer'];
-  const $story = $('#story');
-  // the light inside the glass controls follows the pointer
-  if (fine) addEventListener('pointermove', e => {
-    const gl = e.target.closest && e.target.closest('.glass'); if (!gl) return;
-    const r = gl.getBoundingClientRect();
-    gl.style.setProperty('--gx', (e.clientX - r.left).toFixed(0) + 'px'); gl.style.setProperty('--gy', (e.clientY - r.top).toFixed(0) + 'px');
-  }, { passive: true });
-  const PX = 1 / Math.min(devicePixelRatio || 1, 2);
-  // the grid: tile size and one tile corner (a circle centre) in story coordinates; set by buildRoute
-  const grid = { T: 72, ox: 0, oy: 0, set: false };
-  function setGrid(T, ox, oy) {
-    grid.T = T; grid.ox = ox; grid.oy = oy; grid.set = true;
-    document.documentElement.style.setProperty('--tile', T.toFixed(2) + 'px');
-    const fx = (((ox % T) + T) % T).toFixed(2) + 'px';
-    for (const f of fields) { f.sheet.style.backgroundPositionX = fx; if (f.aura) f.aura.style.setProperty('--fx', fx); f.t = -1; }
-  }
-  const halo = { ax: 0, ay: 0, bx: 0, by: 0, o: 0, seen: false };
-  let fields = [], auraMoved = 0, hasAura = false;
-  function buildField() {
-    hasAura = !reduce && fine;
-    fields = FIELD_HOSTS.map(sel => {
-      const host = $(sel); if (!host) return null;
-      const box = document.createElement('div'), sheet = document.createElement('i');
-      box.className = 'bg-field'; box.setAttribute('aria-hidden', 'true');
-      sheet.className = 'bg-sheet'; box.append(sheet);
-      if (sel === '#heroStage' || sel === '#menu') sheet.style.willChange = 'transform';
-      let aura = null;
-      if (hasAura) { aura = document.createElement('i'); aura.className = 'bg-aura'; box.append(aura); }
-      host.prepend(box);
-      return { host, sheet, aura, t: -1, vis: false, max: sel === '#heroStage' ? 0.2 : 0.24 };   // faint: text stays easy to read
-    }).filter(Boolean);
-    if (hasAura) addEventListener('pointermove', e => { if (e.pointerType === 'mouse') auraMoved = performance.now(); }, { passive: true });
-    if (grid.set) setGrid(grid.T, grid.ox, grid.oy);
-  }
-  function fieldStep(dt, now) {
-    if (!fields.length) return;
-    const h = halo;
-    if (hasAura) {
-      if (mouse.on) {
-        if (!h.seen) { h.ax = h.bx = mouse.x; h.ay = h.by = mouse.y; h.seen = true; }
-        const k1 = 1 - Math.exp(-dt * 8), k2 = 1 - Math.exp(-dt * 1.4);
-        h.ax += (mouse.x - h.ax) * k1; h.ay += (mouse.y - h.ay) * k1;
-        h.bx += (mouse.x - h.bx) * k2; h.by += (mouse.y - h.by) * k2;
-      }
-      const target = mouse.on ? (now - auraMoved < 160 ? 1 : 0.5) : 0;
-      h.o += (target - h.o) * (1 - Math.exp(-dt * (target > h.o ? 2.6 : 0.65)));   // wakes softly, fades slowly
-      if (h.o < 0.004 && !mouse.on) h.seen = false;
-    }
-    const lit = hasAura && h.o >= 0.004, hy0 = Math.min(h.ay - 200, h.by - 340), hy1 = Math.max(h.ay + 200, h.by + 340);
-    // the anchor: where the drawn lattice's first circle centre is on screen right now
-    const TILE = grid.T, anchor = (grid.set ? $story.getBoundingClientRect().top : -scrollY) + grid.oy;
-    for (const f of fields) {
-      const r = f.host.getBoundingClientRect();
-      if (r.bottom < 0 || r.top > innerHeight) { if (f.vis) { f.aura.style.opacity = 0; f.vis = false; } continue; }
-      // the shift that puts this sheet's tile corners on the anchor's grid
-      let t = (((anchor - r.top) % TILE) + TILE) % TILE;
-      t = Math.round(t / PX) * PX;
-      if (t !== f.t) {
-        f.t = t; const tf = `translate3d(0,${t}px,0)`;
-        f.sheet.style.transform = tf; if (f.aura) f.aura.style.transform = tf;
-      }
-      if (!f.aura) continue;
-      if (!lit || hy1 < r.top || hy0 > r.bottom) { if (f.vis) { f.aura.style.opacity = 0; f.vis = false; } continue; }
-      f.vis = true;
-      const top = r.top - TILE + t, st = f.aura.style;
-      st.opacity = (h.o * f.max).toFixed(3);
-      st.setProperty('--ax', (h.ax - r.left).toFixed(1) + 'px'); st.setProperty('--ay', (h.ay - top).toFixed(1) + 'px');
-      st.setProperty('--bx', (h.bx - r.left).toFixed(1) + 'px'); st.setProperty('--by', (h.by - top).toFixed(1) + 'px');
-    }
-  }
-
-  // ---------- quiet brand motifs behind the sections ----------
-  // A few hollow kit sparkles, very faint, slowly turning;
-  // they drift a little against the cursor (depth = how far).
-  const MOTIFS = {
-    hero:     { stars: [[20, 24, 96, 0.6], [7, 50, 44, 1], [64, 88, 60, 0.8]] },
-    story:    { stars: [[6, 16, 124, 0.5], [44, 90, 52, 0.9]] },
-    branches: { stars: [[86, 84, 84, 0.6], [30, 10, 40, 1]] },
-    collab:   { stars: [[12, 72, 112, 0.5], [58, 90, 44, 0.9]] },
-  };
-  // the mark's three sparkles, as they sit in the kit
-  const trio = (() => {
-    const S = HAND.stars, x0 = Math.min(...S.map(t => t.cx - t.r)), y0 = Math.min(...S.map(t => t.cy - t.r));
-    const x1 = Math.max(...S.map(t => t.cx + t.r)), y1 = Math.max(...S.map(t => t.cy + t.r));
-    return `<svg viewBox="${x0} ${y0} ${x1 - x0} ${y1 - y0}" aria-hidden="true">${S.map(t => `<path d="${t.d}"/>`).join('')}</svg>`;
-  })();
-  function buildMotifs() {
-    for (const id in MOTIFS) {
-      const host = id === 'hero' ? $('#heroStage') : $('#' + id); if (!host) continue;
-      const m = MOTIFS[id], box = document.createElement('div');
-      box.className = 'bg-motif'; box.setAttribute('aria-hidden', 'true');
-      box.innerHTML = m.stars.map(([x, y, s, d], i) => `<span class="motif-layer motif-star" data-depth="${d}" style="inset-inline-start:${x}%;top:${y}%;--s:${Math.round(s * 1.5)}px;--spin:${11 + i * 3}s">${trio}</span>`).join('');
-      host.prepend(box);
-    }
-    if (reduce || !matchMedia('(pointer: fine)').matches) return;
-    const layers = $$('.motif-layer').map(n => ({ d: +n.dataset.depth, x: gsap.quickTo(n, 'x', { duration: 1.4, ease: 'power3.out' }), y: gsap.quickTo(n, 'y', { duration: 1.4, ease: 'power3.out' }) }));
-    addEventListener('pointermove', e => {
-      if (e.pointerType !== 'mouse') return;
-      const u = e.clientX / innerWidth - 0.5, v = e.clientY / innerHeight - 0.5;
-      for (const l of layers) { l.x(-u * 34 * l.d); l.y(-v * 24 * l.d); }
-    }, { passive: true });
-  }
-
-  // ---------- the living ink ----------
-  // Everything the magic has made stays alive, quietly: now and then a long, soft sheen
-  // of light glides inside the drawn strokes the way the pen went (the line, beads,
-  // shippo, the lattice, the logotype, the cup, the footer hand), and the kit stars and
-  // beads breathe. Only what is drawn and on screen is used; the drawn part
-  // of each stroke is read from its own dash, so it follows the pen exactly.
-  const LIVE_SEL = '.ink path.ink-link, #heroScene path.sc:not(.sc-markline)';
-  const TWINKLE_SEL = '#heroScene .sc-star, .label-band.is-lit svg, .label-spark, .ink path.ink-bead';
-  const live = { src: [], tw: [], total: 0, at: -1e9, acc: 0, tacc: 0, nG: 0, ms: 0 };
-  let flows = [];
-  const opCache = new Map();
-  function effOpacity(n) {
-    let o = 1;
-    for (let k = n; k && k !== document.body; k = k.parentElement) {
-      let v = opCache.get(k);
-      if (v === undefined) {
-        const cs = getComputedStyle(k);
-        v = cs.display === 'none' || cs.visibility === 'hidden' ? 0 : parseFloat(cs.opacity);
-        opCache.set(k, v);
-      }
-      o *= v; if (o < 0.05) return 0;
-    }
-    return o;
-  }
-  // the drawn stretch [a, b] of a stroke, read from its dash pattern
-  function drawnRange(p, L) {
-    const cs = getComputedStyle(p);
-    if (cs.stroke === 'none' || !(parseFloat(cs.strokeWidth) > 0)) return null;
-    const da = cs.strokeDasharray;
-    if (!da || da === 'none') return [0, L];
-    const nums = da.split(/[\s,]+/).map(parseFloat).filter(n => !isNaN(n));
-    if (!nums.length) return [0, L];
-    const D = nums[0], P = D + (nums.length > 1 ? nums[1] : nums[0]);
-    if (!(P > 0)) return [0, L];
-    const o = parseFloat(cs.strokeDashoffset) || 0;
-    let best = null;
-    for (let k = Math.floor(o / P) - 1; k <= Math.ceil((L + o) / P) + 1; k++) {
-      const a = Math.max(0, k * P - o), b = Math.min(L, k * P - o + D);
-      if (b - a > (best ? best[1] - best[0] : 0.5)) best = [a, b];
-    }
-    return best;
-  }
-  const onScreen = (r, m = 24) => r.width + r.height > 1 && r.bottom > -m && r.top < innerHeight + m && r.right > -m && r.left < innerWidth + m;
-  const isDark = n => { const h = n.closest('[data-surface]'); return !!h && h.dataset.surface === 'dark'; };
-  function refreshLive(now) {
-    live.at = now; opCache.clear();
-    const src = [], tw = []; let total = 0;
-    for (const p of document.querySelectorAll(LIVE_SEL)) {
-      if (!onScreen(p.getBoundingClientRect()) || effOpacity(p) < 0.25) continue;
-      const L = p.__len || (p.__len = p.getTotalLength()); if (L < 4) continue;
-      const rg = drawnRange(p, L); if (!rg || rg[1] - rg[0] < 3) continue;
-      const m = p.getScreenCTM(); if (!m) continue;
-      const sc = Math.hypot(m.a, m.b), w = (rg[1] - rg[0]) * sc;
-      p.__live = { a: rg[0], b: rg[1], sc, dark: isDark(p), dir: p.__rev ? -1 : 1, line: p.classList.contains('ink-link') };
-      src.push({ el: p, w }); total += w;
-    }
-    for (const n of document.querySelectorAll(TWINKLE_SEL)) {
-      if (!onScreen(n.getBoundingClientRect(), 0) || effOpacity(n) < 0.3) continue;
-      let cx, cy, r;
-      if (n.classList.contains('ink-bead')) {           // a bead: its centre, once fully drawn
-        const L = n.__len || (n.__len = n.getTotalLength()), rg = drawnRange(n, L);
-        if (!rg || rg[1] - rg[0] < L - 1) continue;
-        const A = n.getPointAtLength(0), B = n.getPointAtLength(L);
-        cx = (A.x + B.x) / 2; cy = (A.y + B.y) / 2; r = 4.5;
-      } else {
-        const bb = n.getBBox(), m = n.getScreenCTM(); if (!m || !bb.width) continue;
-        cx = bb.x + bb.width / 2; cy = bb.y + bb.height / 2;
-        r = Math.min(7, Math.max(3, bb.width * Math.hypot(m.a, m.b) * 0.32));
-      }
-      tw.push({ el: n, cx, cy, r, dark: isDark(n) });
-    }
-    live.src = src; live.tw = tw; live.total = total;
-    live.inkW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ink-w')) || 3;
-  }
-  // a long pen path (shippo rows, the lattice) split into one helper per segment, so a
-  // point lookup measures a single arc instead of walking the whole path
-  let segHost = null;
-  function segs(p) {
-    if (p.__segs !== undefined) return p.__segs;
-    p.__segs = null;
-    const d = p.getAttribute('d') || '';
-    if (!/^[MLACQ\d\s.,eE+\-]+$/.test(d)) return null;
-    const cmds = d.match(/[MLACQ][^MLACQ]*/g);
-    if (!cmds || cmds.length < 6) return null;
-    if (!segHost) { segHost = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); segHost.setAttribute('aria-hidden', 'true'); segHost.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;visibility:hidden'; document.body.appendChild(segHost); }
-    const out = []; let cur = null, cum = 0;
-    for (const c of cmds) {
-      const nums = c.slice(1).trim().split(/[\s,]+/).map(Number);
-      if (c[0] !== 'M' && cur) {
-        const e = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        e.setAttribute('d', `M${cur[0]} ${cur[1]}${c}`); segHost.appendChild(e);
-        const L = e.getTotalLength(); out.push({ e, a: cum, L }); cum += L;
-      }
-      cur = [nums[nums.length - 2], nums[nums.length - 1]];
-    }
-    p.__segs = out.length ? out : null;
-    return p.__segs;
-  }
-  // a point on a stroke, cached per unit of length: walking a long shippo or lattice
-  // path every frame is what costs, so each point is measured once
-  function pathPt(p, s) {
-    const L = p.__len || (p.__len = p.getTotalLength()), n = Math.ceil(L);
-    let c = p.__pc; if (!c) c = p.__pc = new Float32Array((n + 1) * 2).fill(NaN);
-    const i = Math.max(0, Math.min(n, Math.round(s)));
-    if (Number.isNaN(c[2 * i])) {
-      const sg = segs(p); let q;
-      if (sg) {                                          // find the one segment, measure only it
-        let lo = 0, hi = sg.length - 1;
-        while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (sg[mid].a <= i) lo = mid; else hi = mid - 1; }
-        q = sg[lo].e.getPointAtLength(Math.max(0, Math.min(sg[lo].L, i - sg[lo].a)));
-      } else q = p.getPointAtLength(Math.min(L, i));
-      c[2 * i] = q.x; c[2 * i + 1] = q.y;
-    }
-    return { x: c[2 * i], y: c[2 * i + 1] };
-  }
-  function pickSource() {
-    let x = Math.random() * live.total;
-    for (const s of live.src) { x -= s.w; if (x <= 0) return s.el; }
-    return live.src.length ? live.src[live.src.length - 1].el : null;
-  }
-  function liveStep(dt, now, M) {
-    zoneRects();
-    if (now - live.at > (small() ? 420 : 220)) refreshLive(now);
-    const S = small(), maxFlows = S ? 24 : 110;
-    // sheens: a few long, soft washes of light gliding inside the strokes, the way light
-    // wakes the pattern lines under the cursor; never many at once
-    const rate = Math.min(S ? 0.55 : 1.1, live.total * 0.0011);
-    live.acc += dt * rate;
-    while (live.acc >= 1) {
-      live.acc -= 1;
-      if (live.nG >= (S ? 3 : 5) || !live.src.length) continue;
-      live.nG++;
-      const elm = pickSource(), L = elm && elm.__live; if (!L) continue;
-      const speed = 26 + Math.random() * 16, len = (S ? 90 : 130) + Math.random() * 60;
-      flows.push({ k: 'g', el: elm, s: L.a + Math.random() * (L.b - L.a), v: speed / L.sc, len: len / L.sc, life: 0, max: 4.2 + Math.random() * 2.4, edge: 0 });
-    }
-    // the kit stars and beads breathe now and then
-    live.tacc += dt * (live.tw.length ? (S ? 0.25 : 0.5) : 0);
-    while (live.tacc >= 1) {
-      live.tacc -= 1;
-      if (!live.tw.length || flows.length >= maxFlows + 12) continue;
-      const t = live.tw[(Math.random() * live.tw.length) | 0];
-      flows.push({ k: 't', el: t.el, lx: t.cx, ly: t.cy, r: t.r * (0.8 + Math.random() * 0.5), dark: t.dark, life: 0, max: 1.5 + Math.random() * 0.8, rot: Math.random() * 0.8 });
-    }
-    const add = []; live.nG = 0;
-    flows = flows.filter(f => {
-      f.life += dt;
-      if (f.life >= f.max) return false;
-      if (f.k !== 'g') return true;
-      const L = f.el.__live; if (!L) return false;
-      f.s += L.dir * f.v * dt;
-      const left = (L.dir > 0 ? L.b - f.s : f.s - L.a) * L.sc;
-      if (left <= 0 || f.s < L.a - 1 || f.s > L.b + 1) return false;
-      f.edge = Math.min(1, left / 40);
-      live.nG++;
-      return true;
-    });
-    if (add.length) flows.push(...add);
-    // draw
-    for (const f of flows) {
-      const m = M(f.el); if (!m) continue;
-      const X = (x, y) => m.a * x + m.c * y + m.e, Y = (x, y) => m.b * x + m.d * y + m.f;
-      const t = f.life / f.max;
-      if (f.k === 'g') {
-        // a sheen: soft at both ends, brightest in the middle, as wide as the stroke itself
-        const Lv = f.el.__live, dark = Lv.dark;
-        const a = Math.pow(Math.sin(Math.PI * t), 1.4) * f.edge;
-        if (a <= 0.01) continue;
-        const s0 = Math.max(Lv.a, Math.min(Lv.b, f.s - Lv.dir * f.len)), s1 = f.s;
-        const span = Math.abs(s1 - s0) * Lv.sc; if (span < 4) continue;
-        const n = Math.max(4, Math.min(40, Math.round(span / 5))), w = (live.inkW || 3);
-        const P = [];
-        for (let i = 0; i <= n; i++) { const p = pathPt(f.el, s0 + (s1 - s0) * i / n); P.push(X(p.x, p.y), Y(p.x, p.y)); }
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
-        // 1) a faint bloom around the line, like the halo on the pattern
-        ctx.globalCompositeOperation = dark ? 'lighter' : 'source-over';
-        ctx.strokeStyle = dark ? '#C9B3CF' : '#B79BC0';
-        ctx.lineWidth = w * 3.2;
-        for (let i = 1; i <= n; i++) {
-          const q = Math.sin(Math.PI * (i - 0.5) / n);
-          ctx.globalAlpha = a * q * q * (dark ? 0.07 : 0.1);
-          ctx.beginPath(); ctx.moveTo(P[2 * i - 2], P[2 * i - 1]); ctx.lineTo(P[2 * i], P[2 * i + 1]); ctx.stroke();
-        }
-        // 2) the light inside the stroke
-        ctx.strokeStyle = dark ? '#FFFFFF' : '#E6D9EA';
-        ctx.lineWidth = Math.max(1, w * 0.62);
-        for (let i = 1; i <= n; i++) {
-          const q = Math.sin(Math.PI * (i - 0.5) / n);
-          ctx.globalAlpha = a * q * q * (dark ? 0.55 : 0.6);
-          ctx.beginPath(); ctx.moveTo(P[2 * i - 2], P[2 * i - 1]); ctx.lineTo(P[2 * i], P[2 * i + 1]); ctx.stroke();
-        }
-      } else if (f.k === 'm') {
-        f.ox += f.vx * dt; f.oy += f.vy * dt; f.vx *= 0.97; f.vy *= 0.97;
-        const x = X(f.lx, f.ly) + f.ox, y = Y(f.lx, f.ly) + f.oy;
-        if (inZone(x, y)) { f.life = f.max; continue; }
-        ctx.globalCompositeOperation = f.dark ? 'lighter' : 'source-over';
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.globalAlpha = Math.sin(Math.PI * t) * (f.dark ? 0.95 : 0.8);
-        ctx.fillStyle = f.dark ? (f.hue ? '#FFFFFF' : '#C9B3CF') : (f.hue ? '#662482' : '#926D8F');
-        ctx.beginPath(); ctx.arc(x, y, f.r, 0, 6.283); ctx.fill();
-      } else {                                           // twinkle: a kit star flashes in place
-        const x = X(f.lx, f.ly), y = Y(f.lx, f.ly), e = Math.sin(Math.PI * t);
-        if (inZone(x, y)) { f.life = f.max; continue; }
-        ctx.globalCompositeOperation = f.dark ? 'lighter' : 'source-over';
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.globalAlpha = e * 0.16; ctx.fillStyle = f.dark ? '#C9B3CF' : '#B79BC0';
-        ctx.beginPath(); ctx.arc(x, y, Math.max(0.1, f.r * 2.2 * e), 0, 6.283); ctx.fill();
-        const sc = (f.r * (0.4 + 0.5 * e)) / LOW.r, rot = f.rot + t * 0.5, c = Math.cos(rot) * sc * dpr, s = Math.sin(rot) * sc * dpr;
-        ctx.globalAlpha = e * 0.7; ctx.fillStyle = f.dark ? '#FFFFFF' : '#662482';
-        ctx.setTransform(c, s, -s, c, x * dpr - (c * LOW.cx - s * LOW.cy), y * dpr - (s * LOW.cx + c * LOW.cy));
-        ctx.fill(starPath);
-      }
-    }
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-  }
-  // a thin ring that opens where you click
-  let rings = [];
-  const ring = (x, y, dark, r = 18) => { if (rings.length < 8) rings.push({ x, y, dark, r, life: 0, max: 0.55 }); };
-  let lastT = performance.now();
-  function tick() {
-    const now = performance.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
-    if (siteReady) checkLabels();
-    fieldStep(dt, now);
-    if (!siteReady || reduce) return;
-    // head
-    const fr = parked ? null : frontier();
-    if (fr && birthDone) {
-      const sp = screenPoint(fr.at.el, fr.at.len);
-      headState.x = sp.x; headState.y = sp.y;
-      magic.style.transform = `translate3d(${sp.x}px, ${sp.y}px, 0)`;
-      const dk = !!fr.chain.dark || (fr.chain.dusk > 0 && sp.ly < fr.chain.dusk);
-      magic.classList.toggle('on-dark', dk);
-      if (!headState.shown) { headState.shown = true; gsap.to(magic, { opacity: 1, duration: 0.6, ease: 'power2.out' }); }
-      // shed sparkles where the pen has travelled (measured along the path, not the screen)
-      if (headState.lastEl === fr.at.el && headState.lastLX != null) {
-        const d = Math.hypot(sp.lx - headState.lastLX, sp.ly - headState.lastLY) * sp.s;
-        if (d > 7) { spawn(fr.at.el, sp.lx, sp.ly, dk, d > 30 ? 2 : 1, HUG); headState.lastLX = sp.lx; headState.lastLY = sp.ly; }
-      } else { headState.lastEl = fr.at.el; headState.lastLX = sp.lx; headState.lastLY = sp.ly; }
-      headState.idle += dt;
-      if (headState.idle > 0.55) { headState.idle = 0; spawn(fr.at.el, sp.lx, sp.ly, dk, 1, HUG); }
-    }
-    // particles
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, dust.width, dust.height);
-    const ctm = new Map();
-    const M = e => { let m = ctm.get(e); if (m === undefined) { m = e.getScreenCTM(); ctm.set(e, m); } return m; };
-    const t0 = performance.now(); liveStep(dt, now, M); live.ms = live.ms * 0.9 + (performance.now() - t0) * 0.1;
-    if (!particles.length && !rings.length) return;
-    rings = rings.filter(r => (r.life += dt) < r.max);
-    for (const r of rings) {
-      const t = r.life / r.max, e = 1 - Math.pow(1 - t, 3);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.globalAlpha = 0.55 * (1 - t);
-      ctx.strokeStyle = r.dark ? '#EFE9F2' : '#662482';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(r.x, r.y, 3 + r.r * e, 0, Math.PI * 2); ctx.stroke();
-    }
-    particles = particles.filter(p => (p.life += dt) < p.max);
-    for (const p of particles) {
-      let m = null;
-      if (p.el) { m = M(p.el); if (!m) continue; }
-      p.dx += p.vx * dt; p.dy += p.vy * dt; p.vy += 10 * dt; p.vx *= 0.985; p.rot += p.vr * dt;
-      const x = m ? m.a * p.lx + m.c * p.ly + m.e + p.dx : p.lx + p.dx, y = m ? m.b * p.lx + m.d * p.ly + m.f + p.dy : p.ly + p.dy;
-      if (!p.keep && inZone(x, y)) { p.life = p.max; continue; }
-      const t = p.life / p.max, a = Math.sin(Math.PI * Math.min(1, t * 1.4)) * (0.65 + 0.35 * Math.sin(now / 60 + p.size * 7));
-      const sc = (p.size / LOW.r) * (1 - t * 0.6);
-      ctx.globalCompositeOperation = p.dark ? 'lighter' : 'source-over';
-      ctx.globalAlpha = Math.max(0, a);
-      ctx.fillStyle = p.dark ? (p.hue ? '#FFFFFF' : '#C9B3CF') : (p.hue ? '#662482' : '#926D8F');
-      const c = Math.cos(p.rot) * sc * dpr, s = Math.sin(p.rot) * sc * dpr;
-      ctx.setTransform(c, s, -s, c, x * dpr - (c * LOW.cx - s * LOW.cy), y * dpr - (s * LOW.cx + c * LOW.cy));
-      ctx.fill(starPath);
-    }
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-  }
-  gsap.ticker.add(tick);
-  window.__tada = { chains, frontier, startOf, endOf, screenPoint, live: () => ({ flows: flows.length, glints: flows.filter(f => f.k === 'g').length, twinkles: flows.filter(f => f.k === 't').length, src: live.src.length, tw: live.tw.length, ink: Math.round(live.total), ms: +live.ms.toFixed(2) }) }; // inspection hook (read-only use)
 
   // ======================================================================
-  // The Tada magic: the route through the page
+  // The route through the page
   // ======================================================================
-  const triggers = [];
-  let heroPin = null, menuPin = null, menuTween = null, footer = null;
-  let heroVideo = null;
-
-  function inkX() {
-    const c = $('#story .container').getBoundingClientRect(), vw = document.documentElement.clientWidth;
-    const pad = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pad')) || 64;
-    const off = Math.max(14, Math.min(pad * 0.55, 44));
-    return RTL() ? Math.min(vw - 10, c.right - pad + off) : Math.max(10, c.left + pad - off);
-  }
-  function sizeSvg(svg, w, h) {
-    svg.setAttribute('width', w); svg.setAttribute('height', h);
-    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    svg.replaceChildren();
-  }
-  const duskH = () => { const d = $('#story .dusk'); return d ? d.offsetHeight : 0; };
-  const rel = (r, o) => ({ x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height, r: r.right - o.left, b: r.bottom - o.top });
-
-  function addChain(name, host, pen, extra = {}) {
-    const c = { name, host, links: pen.links, p: 0, tip: null, dark: host.dataset.surface === 'dark', ...extra };
-    c.links.forEach(primeLink);
-    chains.push(c);
-    return c;
-  }
-  // Every chain has its own scrubbed trigger, and smoothing can let two of them be
-  // in motion at once. The resolver keeps the line honest: the furthest chain that
-  // has started decides, every chain before it is complete, every chain after it empty.
-  // So the line can never have a hole, and the head is always on its tip.
-  function resolve() {
-    let k = -1;
-    chains.forEach((c, i) => { if ((c.raw || 0) > 0) k = i; });
-    chains.forEach((c, i) => {
-      const want = i < k ? 1 : i > k ? 0 : c.raw;
-      if (want !== c.p) draw(c, want);
-    });
-    footerCheck();
-  }
-  function lineTrigger(c, opts) {
-    const proxy = { p: 0 };
-    if (reduce) return gsap.to(proxy, { p: 1, duration: 0, paused: true });
-    const tw = gsap.to(proxy, {
-      p: 1, ease: 'none',
-      scrollTrigger: { trigger: c.host, scrub: fine ? 1.2 : 1.8, invalidateOnRefresh: true, ...opts },
-      onUpdate: () => { c.raw = proxy.p; resolve(); },
-    });
-    triggers.push(tw);
-    return tw;
-  }
-  // a vertical run with star beads at the given fractions
-  function runWithBeads(pen, y2, fracs, budgetScale = 1) {
-    const y1 = pen.y, len = y2 - y1, r = beadR();
-    let at = y1;
-    for (const f of fracs) {
-      const by = y1 + len * f - r;
-      if (by - at < 8 || by + 2 * r > y2 - 4) continue;
-      pen.line(by - at, (by - at) * budgetScale);
-      pen.bead(2 * r * budgetScale);
-      at = by + 2 * r;
-    }
-    pen.line(y2 - at, (y2 - at) * budgetScale);
-  }
-
+  let ending = null;
   function killRoute() {
     triggers.forEach(t => { if (t.scrollTrigger) t.scrollTrigger.kill(true); t.kill(); });
-    triggers.length = 0;
-    chains.length = 0;
-    heroPin = menuPin = menuTween = null;
+    triggers.length = 0; chains.length = 0;
+    if (menuTween) menuTween.kill();
+    menuPin = menuTween = null;
     gsap.set('#menuTrack', { x: 0 });
-    particles = []; flows = []; live.src = []; live.tw = []; live.total = 0;
-    if (segHost) segHost.replaceChildren();
-    if (footer && footer.snapTl) footer.snapTl.kill();
-    footer = null; parked = false;
-  }
-
-  // Large text (a browser's text size, accessibility scaling) must never be clipped: the
-  // labels grow to the room there is, and if the text still does not fit, the labels'
-  // type scales down together until it does.
-  function fitMenu(host, track) {
-    const labs = $$('.label', track); if (!labs.length) return;
-    host.classList.remove('fit-lead'); host.style.removeProperty('--panel-h');
-    labs.forEach(l => { l.classList.remove('fit-0', 'fit-1', 'fit-2'); l.style.removeProperty('--fit'); });
-    // how far a label's text runs past the room it has (layout boxes only: the frame and its stars sit outside on purpose)
-    const runOver = (box, limit) => { let m = -Infinity; for (const c of box.children) { if (!(c instanceof HTMLElement)) continue; const cs = getComputedStyle(c); if (cs.position === 'absolute' || cs.position === 'fixed' || cs.display === 'none') continue; m = Math.max(m, c.offsetTop + c.offsetHeight + parseFloat(cs.marginBottom || 0)); } return m - limit; };
-    const overOf = l => { const pt = $('.pack-text', l); return Math.max(0, pt ? runOver(pt, pt.offsetTop + pt.clientHeight) : runOver(l, l.clientHeight - parseFloat(getComputedStyle(l).paddingBottom || 0))); };
-    // the labels take the room above the shelf, never more (all the same height)
-    const size = () => {
-      host.style.removeProperty('--panel-h');
-      const room = host.clientHeight - (track.getBoundingClientRect().top - host.getBoundingClientRect().top) - (small() ? 70 : 100);
-      const h = labs[0].clientHeight, o = Math.max(...labs.map(overOf));
-      const want = o > 1 ? h + o + 8 : h;
-      if (want > room || h > room) host.style.setProperty('--panel-h', Math.max(200, Math.min(want, room)).toFixed(0) + 'px');
-      else if (want > h) host.style.setProperty('--panel-h', want.toFixed(0) + 'px');
-    };
-    // a label whose text still runs over steps down gently, on its own: smaller type first,
-    // then its quieter extras step aside (the bag picture, then the taste rulers and the note)
-    const steps = [0.94, 'fit-0', 0.88, 'fit-1', 0.88, 0.82, 'fit-2', 0.82, 0.76, 0.7];
-    const settle = () => labs.forEach(l => {
-      for (const st of steps) {
-        if (overOf(l) <= 1) return;
-        if (typeof st === 'string') l.classList.add(st); else l.style.setProperty('--fit', String(st));
-      }
-    });
-    size(); settle();
-    // still too much: the heading's lead line steps aside too, and everything is measured again
-    if (Math.max(...labs.map(overOf)) > 1) {
-      host.classList.add('fit-lead');
-      labs.forEach(l => { l.classList.remove('fit-0', 'fit-1', 'fit-2'); l.style.removeProperty('--fit'); });
-      size(); settle();
-    }
+    particles = []; parked = false; ending = null;
   }
 
   function buildRoute() {
     killRoute();
-    // the line is the A's own stroke, continued: same weight on screen, nothing thinner or thicker
-    const wp = $('#heroWord path');
-    if (wp) { const m = wp.getScreenCTM(), px = m && parseFloat(getComputedStyle(wp).strokeWidth) * Math.hypot(m.a, m.b);
-      if (px > 0.5) document.documentElement.style.setProperty('--ink-w', px.toFixed(2) + 'px'); }
-    const sgn = SGN(), vw = document.documentElement.clientWidth, H = vh();
-    const xs = inkX(), xf = vw - xs;
-    const heroDist = (small() ? 1.5 : 3) * H;     // the guide: 400–500vh desktop, 250vh on small screens
-    const menuTravel = () => { const tr = $('#menuTrack'); return Math.max(0, tr.scrollWidth - document.documentElement.clientWidth); };
+    const sgn = RTL() ? -1 : 1, H = vh(), W = vw();
+    const { S, E } = rails();
+    const tops = {};
+    const R = id => { const n = $(id), r = n.getBoundingClientRect(); return { n, r }; };
 
-    // ---------------- hero: born on the logotype's last foot ----------------
+    // ---------------- hero: the line leaves the door from its far foot ----------------
     {
-      const host = $('#hero'), stage = $('#heroStage'), svg = $('.ink[data-ink="hero"]');
-      const sr = stage.getBoundingClientRect(); sizeSvg(svg, sr.width, sr.height);
-      const wr = rel($('#heroWord').getBoundingClientRect(), sr);
-      // fa: the right foot of «A» (the pen's last point in the loader); en: the left foot of «T»
-      const foot = RTL() ? [1141, 538] : [68, 538];
-      const bx = wr.x + (foot[0] / WORD.w) * wr.w, by = wr.y + (foot[1] / WORD.h) * wr.h;
-      const pen = makePen(svg, bx, by, 'B', sgn);
-      const run = Math.abs(xs - bx);
-      const r = Math.max(6, Math.min(R0, run - 2));
-      pen.line(run - r, 0.05 * heroDist).turn('S', 0.03 * heroDist, r);
-      const y60 = 0.6 * sr.height;
-      const scale = (0.92 * heroDist) / Math.max(1, y60 - pen.y);
-      runWithBeads(pen, y60, [0.28, 0.58, 0.86], scale);
-      pen.line(sr.height - pen.y, 0.4 * H);
+      const { n: host, r: hr } = R('#hero'), svg = $('.ink[data-ink="hero"]', host);
+      sizeSvg(svg, hr.width, hr.height);
+      const { end } = archFeet(), m = door.arch.getScreenCTM();
+      const fx = m.a * end.x + m.c * end.y + m.e - hr.left, fy = m.b * end.x + m.d * end.y + m.f - hr.top;
+      // the door's own line weight along the threshold, then the page's
+      const doorW = 9.85 * Math.hypot(m.a, m.b);
+      const ex = E - hr.left;
+      const pen = makePen(svg, fx, fy, 'F', sgn);
+      if (Math.abs(ex - fx) > R0 * 2 + 4) {
+        pen.toX(ex - sgn * R0);
+        svg.lastChild.style.strokeWidth = doorW.toFixed(2) + 'px';
+        pen.turn('S');
+      } else pen.turn('S', undefined, 0);
+      pen.to(hr.height);
       const c = addChain('hero', host, pen);
-      c.birth = { el: c.links[0].parts[0].el };
+      const rr = chainRange(c, fy);
+      lineTrigger(c, { start: () => `top+=${Math.round(Math.max(0, fy - H * READ))} top`, end: rr.end });
     }
 
-    // ---------------- story: the shippo lattice ----------------
+    // ---------------- morning: dawn, the headline, the sun and the kettle ----------------
     {
-      const host = $('#story'), svg = $('.ink[data-ink="story"]');
-      const lat = $('#storyLattice');
-      const n = small() ? 6 : 7, rows = 5;
-      const rr = small() ? Math.min(22, (vw - 2 * Math.min(xs, xf) - 8) / (2 * n)) : 34;
-      const latW = 2 * rr * n, latH = rr * (rows + 1);
-      const padPx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pad')) || 64;
-      const cr = $('#story .container').getBoundingClientRect();
-      const inside = Math.abs(xs - (RTL() ? cr.right - padPx : cr.left + padPx));
-      lat.style.setProperty('--lat-w', `${Math.max(40, latW - inside)}px`);
-      lat.style.setProperty('--lat-h', `${latH}px`);
-      const hr = host.getBoundingClientRect(); sizeSvg(svg, hr.width, hr.height);
-      const dH = duskH();
-      svg.classList.toggle('has-dusk', dH > 0);
-      if (dH > 0) {
-        const g = el('linearGradient', { id: 'inkDusk', gradientUnits: 'userSpaceOnUse', x1: 0, y1: 0, x2: 0, y2: dH }, el('defs', {}, svg));
-        [[0, '#EFE9F2'], [0.42, '#E6D9EA'], [0.66, '#662482'], [1, '#662482']].forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, g));
-      }
-      const lr = rel(lat.getBoundingClientRect(), hr);
-      const y0 = lr.y + rr;                           // row 0 centre line
-      setGrid(2 * rr, xs + rr, y0);                   // the faint sheet everywhere takes this lattice's grid
-      const pen = makePen(svg, xs, 0, 'S', sgn);
-      pen.line(y0);
-      pen.lattice(rows, n, rr, (latH * 1.7 + 160) * 3.4);   // slow and calm: the pattern takes its time
-      runWithBeads(pen, hr.height, [0.55]);
-      addChain('story', host, pen, { dusk: dH * 0.5 });
+      const { n: host, r: hr } = R('#morning'), svg = $('.ink', host);
+      sizeSvg(svg, hr.width, hr.height);
+      const skyH = $('.sky', host).offsetHeight;
+      const pen = makePen(svg, E - hr.left, 0, 'S', sgn);
+      const h2 = $('.tt-h', host), sun = $('.art-sun svg', host), kettle = $('.art-kettle svg', host);
+      const stops = [
+        [rel(h2.getBoundingClientRect(), hr).y, () => writeHeadline(h2)],
+        [rel(sun.getBoundingClientRect(), hr).y + 10, () => { drawArt(sun); sound('chapter'); }],
+        [rel(kettle.getBoundingClientRect(), hr).y + 10, () => { drawArt(kettle); }],
+      ].sort((a, b) => a[0] - b[0]);
+      stations(pen, stops, hr.height);
+      skyGradient(svg, 'skyMorning', skyH, CREAM, PURPLE);
+      const c = addChain('morning', host, pen, { sky: { dark: 'top', at: skyH * 0.55 } });
+      const rr = chainRange(c); lineTrigger(c, { start: rr.start, end: rr.end });
     }
 
-    // ---------------- menu: pinned; the magic stays put and draws the shelf ----------------
+    // ---------------- bar: from bean to cup ----------------
     {
-      const host = $('#menu'), track = $('#menuTrack'), tsvg = $('.ink[data-ink="menu-track"]'), svg = $('.ink[data-ink="menu"]');
-      fitMenu(host, track);
-      const labEls = $$('.label', track);
-      if (labEls.length) {                                           // the first and the last product can rest in the centre
-        track.style.paddingInlineStart = Math.max(16, (vw - labEls[0].offsetWidth) / 2).toFixed(1) + 'px';
-        track.style.paddingInlineEnd = Math.max(16, (vw - labEls[labEls.length - 1].offsetWidth) / 2).toFixed(1) + 'px';
+      const { n: host, r: hr } = R('#bar'), svg = $('.ink', host);
+      sizeSvg(svg, hr.width, hr.height);
+      const pen = makePen(svg, E - hr.left, 0, 'S', sgn);
+      const h2 = $('.tt-h', host), path = $('.art-path svg', host), esp = $('.art-espresso svg', host), pack = $('#pack');
+      const stops = [
+        [rel(h2.getBoundingClientRect(), hr).y, () => writeHeadline(h2)],
+        [rel(path.getBoundingClientRect(), hr).y + 10, () => drawArt(path, { dur: 2.6 })],
+        [rel(esp.getBoundingClientRect(), hr).y + 10, () => drawArt(esp)],
+        [rel(pack.getBoundingClientRect(), hr).y + 20, () => pack.classList.add('is-on')],
+      ].sort((a, b) => a[0] - b[0]);
+      stations(pen, stops, hr.height);
+      const c = addChain('bar', host, pen);
+      const rr = chainRange(c); lineTrigger(c, { start: rr.start, end: rr.end });
+    }
+
+    // ---------------- menu: pinned; the line draws the staff the flavors hang from ----------------
+    {
+      const host = $menu, track = $('#menuTrack'), svg = $('.ink', host);
+      const travel = Math.max(0, track.scrollWidth - W);
+      const pinLen = Math.max(H * 0.9, travel * 1.25);
+      if (!reduce) {
+        menuTween = gsap.to(track, { x: () => (RTL() ? 1 : -1) * Math.max(0, track.scrollWidth - vw()), ease: 'none' });
+        const st = ScrollTrigger.create({ trigger: host, start: 'top top', end: () => `+=${Math.round(pinLen)}`, pin: true, pinSpacing: true, animation: menuTween, scrub: fine ? 0.6 : 0.4, invalidateOnRefresh: true, anticipatePin: 1 });
+        menuPin = st; triggers.push({ scrollTrigger: st, kill: () => {} });
       }
       const hr = host.getBoundingClientRect();
       sizeSvg(svg, hr.width, hr.height);
-      const trr = track.getBoundingClientRect();
-      const tLeft = trr.left - hr.left, tTop = trr.top - hr.top;   // track is reset to x: 0 by killRoute
-      sizeSvg(tsvg, track.scrollWidth, trr.height);
-      const toT = (x, y) => [x - tLeft, y - tTop];
-      const labels = $$('.label', track).map(lab => ({ lab, r: rel(lab.getBoundingClientRect(), hr) }));
-      const panelBottom = Math.max(...labels.map(l => l.r.b));
-      const shelfY = panelBottom + (small() ? 28 : 40);
-      const travel = menuTravel();
-      const U = x => (sgn > 0 ? x : vw - x);                         // distance from the start edge
-      const Xat = u => (sgn > 0 ? u : vw - u);
-      const uS = U(xs), uF = U(xf), uEnd = uF + travel;
-      const pre = H * 0.35 / Math.max(1, uF - uS - R0);              // scroll px per sideways px before the pin
-      const budgetFor = (u1, u2) => { const a = Math.min(u1, u2), b = Math.max(u1, u2); const before = Math.max(0, Math.min(b, uF) - a), after = Math.max(0, b - Math.max(a, uF)); return before * pre + after; };
-      const [sx, sy] = toT(xs, 0);
-      const pen = makePen(tsvg, sx, sy, 'S', sgn);
-      pen.line(shelfY - R0, H * 0.18).turn('F', H * 0.07);
-      const D = small() ? 22 : 28, r = beadR();
-      const lights = [];
-      const items = labels.map(l => ({ ua: Math.min(U(l.r.x), U(l.r.r)), ub: Math.max(U(l.r.x), U(l.r.r)), lab: l.lab })).sort((a, b) => a.ua - b.ua);
-      let u = uS + R0;
-      const straight = (u2, withBead) => {
-        const gap = u2 - u;
-        if (gap <= 0.5) return;
-        if (withBead && gap > 2 * r + 24) {
-          const half = (gap - 2 * r) / 2;
-          pen.line(half, budgetFor(u, u + half)); pen.bead(budgetFor(u + half, u + half + 2 * r)); pen.line(half, budgetFor(u + half + 2 * r, u2));
-        } else pen.line(gap, budgetFor(u, u2));
-        u = u2;
-      };
-      items.forEach((it, i) => {
-        straight(it.ua, i > 0);
-        const n = Math.max(2, Math.floor((it.ub - it.ua) / D));
-        const m = (it.ub - it.ua - n * D) / 2;
-        straight(it.ua + m, false);
-        const tiles = $$('.label-band svg, .pouch-tile', it.lab);
-        const lit = { on: false };
-        pen.shippo(n, D, budgetFor(u, u + n * D), {
-          onProgress(f) {
-            it.lab.__want = f >= 0.97; it.lab.__i = i;
-            const on = f > 0.5;
-            if (on === lit.on) return;
-            lit.on = on;
-            const band = $('.label-band', it.lab); if (band) band.classList.toggle('is-lit', on);
-            tiles.forEach(t => { if (t.classList.contains('pouch-tile')) t.style.opacity = on || reduce ? 1 : 0; });
-          },
-        });
-        u += n * D;
-        straight(it.ub, false);
-      });
-      straight(uEnd - R0, true);
-      pen.turn('S', R0);
-      // snap points: the track progress at which each product sits in the centre
-      menuGeom = { ps: items.map(it => Math.min(1, Math.max(0, ((it.ua + it.ub) / 2 - vw / 2) / Math.max(1, travel)))) };
-      menuActive = -1;
-      // exit: fixed in the section, from where the track's end comes to rest
-      const ex = makePen(svg, xf, shelfY + R0, 'S', sgn);
-      ex.line(hr.height - (shelfY + R0), 0.4 * H);
-      const c = addChain('menu', host, { links: [...pen.links, ...ex.links] });
-      c.travel = menuTravel;
+      const stage = rel($('#menuStage').getBoundingClientRect(), hr);
+      const yStaff = stage.y - (small() ? 16 : 24);
+      const pen = makePen(svg, E - hr.left, 0, 'S', sgn);
+      const h2 = $('.tt-h', host);
+      const hy = rel(h2.getBoundingClientRect(), hr).y;
+      pen.to(Math.max(2, hy - beadR()), H * READ * 0.4);
+      pen.station(on => { if (on) { writeHeadline(h2); menuReached = true; wakeMenu(); } }, 1);
+      pen.to(yStaff - R0, H * READ * 0.5);
+      pen.turn('B', 30);
+      pen.toX(S - hr.left + sgn * R0, reduce ? 200 : pinLen);
+      pen.turn('S', 30).to(hr.height, hr.height - yStaff);
+      const c = addChain('menu', host, pen);
+      const total = c.links.reduce((s, l) => s + l.budget, 0);
+      lineTrigger(c, { start: () => `top ${Math.round(READ * 100)}%`, end: () => `+=${Math.round(total)}` });
     }
 
-    // ---------------- branches: a route with a station at each branch ----------------
-    // No rules across the page: the line runs down beside the routes, a kit star at each
-    // branch (the branch glows as the pen reaches it), then crosses to the other side in
-    // one long, soft sweep that flows on into the next part.
+    // ---------------- evening: dusk, the magician's hat ----------------
     {
-      const host = $('#branches'), svg = $('.ink[data-ink="branches"]');
-      host.style.paddingBottom = '';
-      let hr = host.getBoundingClientRect();
-      const lis = $$('#branchRows li');
-      // the sweep stays a slow diagonal, never a flat rule: on wide screens it gets room
-      const lastB = lis.length ? rel(lis[lis.length - 1].getBoundingClientRect(), hr).b : hr.height * 0.6;
-      const want = Math.abs(xf - xs) * 0.3 + 40, room = hr.height - lastB;
-      if (room < want) { host.style.paddingBottom = `calc(var(--section-gap) + ${Math.ceil(want - room)}px)`; hr = host.getBoundingClientRect(); }
+      const { n: host, r: hr } = R('#evening'), svg = $('.ink', host);
       sizeSvg(svg, hr.width, hr.height);
-      const pen = makePen(svg, xf, 0, 'S', sgn);
-      const r = beadR();
-      lis.forEach((li, i) => {
-        const row = rel(li.getBoundingClientRect(), hr);
-        pen.to(row.y + row.h / 2 - r);
-        pen.bead();
-        const station = pen.links[pen.links.length - 1];
-        let reached = false;
-        station.onProgress = f => {
-          const on = f >= 0.5;
-          if (on === reached) return;
-          reached = on; li.classList.toggle('is-reached', on);
-          if (on && siteReady) sfx.tile(i + 2);
-        };
-      });
-      const y0 = pen.y, y1 = hr.height, k = (y1 - y0) * 0.62;
-      pen.cubic([xf, y0 + k], [xs, y1 - k], [xs, y1], undefined, 'S');
-      addChain('branches', host, pen);
+      const skyH = $('.sky', host).offsetHeight;
+      const pen = makePen(svg, S - hr.left, 0, 'S', -sgn);
+      const h2 = $('.tt-h', host), hat = $('.art-hat svg', host);
+      const stops = [
+        [rel(h2.getBoundingClientRect(), hr).y, () => writeHeadline(h2)],
+        [rel(hat.getBoundingClientRect(), hr).y + 20, () => { drawArt(hat, { dur: 2 }); tadaBurst(hat); }],
+      ].sort((a, b) => a[0] - b[0]);
+      stations(pen, stops, hr.height);
+      skyGradient(svg, 'skyEvening', skyH, PURPLE, CREAM);
+      const c = addChain('evening', host, pen, { sky: { dark: 'bottom', at: skyH * 0.45 } });
+      const rr = chainRange(c); lineTrigger(c, { start: rr.start, end: rr.end });
     }
 
-    // ---------------- collaboration: quiet ----------------
+    // ---------------- branches: three steps down ----------------
     {
-      const host = $('#collab'), svg = $('.ink[data-ink="collab"]');
-      const hr = host.getBoundingClientRect(); sizeSvg(svg, hr.width, hr.height);
-      const pen = makePen(svg, xs, 0, 'S', sgn);
-      runWithBeads(pen, hr.height, [0.5]);
-      addChain('collab', host, pen);
+      const { n: host, r: hr } = R('#branches'), svg = $('.ink', host);
+      sizeSvg(svg, hr.width, hr.height);
+      const pen = makePen(svg, S - hr.left, 0, 'S', sgn);
+      const h2 = $('.tt-h', host);
+      const steps = $$('.step', host);
+      const reach = (li, i) => on => {
+        li.classList.toggle('is-reached', on);
+        if (on) { drawArt($('svg.art', li)); sound('tile', i + 4); }
+      };
+      pen.to(Math.max(2, rel(h2.getBoundingClientRect(), hr).y - beadR()));
+      pen.station(on => on && writeHeadline(h2));
+      if (innerWidth > 900) {
+        // stairs: a tread under each branch, a riser down to the next
+        steps.forEach((li, i) => {
+          const r = rel(li.getBoundingClientRect(), hr);
+          const yT = r.b, farEdge = RTL() ? r.x : r.r;
+          pen.to(yT);
+          pen.turn('F', 0);
+          const xEnd = i === steps.length - 1 ? E - hr.left : farEdge + sgn * 6;
+          const run = Math.abs(xEnd - pen.x);
+          // the tread wakes its branch half way along
+          pen.line(run * 0.5).station(reach(li, i), 30).line(Math.max(0, run * 0.5 - 2 * beadR()));
+          pen.turn('S', 0);
+        });
+        pen.to(hr.height);
+      } else {
+        steps.forEach((li, i) => {
+          const r = rel(li.getBoundingClientRect(), hr);
+          pen.to(Math.max(pen.y + 2, r.y + 6));
+          pen.station(reach(li, i));
+        });
+        // then across to the far side in one long, soft sweep
+        const y0 = pen.y + 20, y1 = hr.height, k = (y1 - y0) * 0.6, xe = E - hr.left;
+        pen.to(y0);
+        pen.cubic([pen.x, y0 + k], [xe, y1 - k], [xe, y1], undefined, 'S');
+      }
+      const c = addChain('branches', host, pen);
+      const rr = chainRange(c); lineTrigger(c, { start: rr.start, end: rr.end });
     }
 
-    // ---------------- footer: the line becomes the hand, the hand snaps ----------------
+    // ---------------- order: the road ----------------
     {
-      const host = $('#footer'), svg = $('.ink[data-ink="footer"]');
-      const hr = host.getBoundingClientRect(); sizeSvg(svg, hr.width, hr.height);
-      const slot = rel($('#footerHand').getBoundingClientRect(), hr);
-      const hand = buildHandSvg();
-      hand.svg.setAttribute('x', slot.x); hand.svg.setAttribute('y', slot.y);
-      hand.svg.setAttribute('width', slot.w); hand.svg.setAttribute('height', slot.h);
-      svg.appendChild(hand.svg);
-      const fx = addSnapHelpers(hand);
-      prepSnap(gsap, hand, fx);
-      gsap.set(hand.stars, { scale: reduce ? 1 : 0, opacity: reduce ? 1 : 0 });
-      const k = slot.h / VH;
-      const P = (px, py) => [slot.x + (px - VX) * k, slot.y + (py - VY) * k];
-      const ends = id => { const s = hand.strokes[id], L = hand.byId[id].len; const a = s.getPointAtLength(0), b = s.getPointAtLength(L); return { a: [a.x, a.y], b: [b.x, b.y], L }; };
-      // stroke order: entered from the line's side, ends on the snap's contact point
-      const order = RTL()
-        ? [['outer', 1], ['thumb', 1], ['thumbtop', 0], ['middle_a', 0], ['ring', 0], ['pinky', 0], ['middle_b', 1], ['midtip', 0]]
-        : [['outer', 0], ['pinky', 1], ['ring', 1], ['middle_b', 0], ['thumb', 0], ['thumbtop', 0], ['middle_a', 0], ['midtip', 0]];
-      const first = ends(order[0][0]);
-      const E = P(...(order[0][1] ? first.b : first.a));
-      const pen = makePen(svg, xs, 0, 'S', sgn);
-      const yIn = Math.max(40, E[1] - Math.max(160, hr.height * 0.28));
-      pen.to(yIn);
-      // tangent of the first stroke where the pen meets it
-      const s0 = hand.strokes[order[0][0]], L0 = hand.byId[order[0][0]].len;
-      const q1 = s0.getPointAtLength(order[0][1] ? L0 : 0), q2 = s0.getPointAtLength(order[0][1] ? L0 - 6 : 6);
-      const tx = (q2.x - q1.x), ty = (q2.y - q1.y), tl = Math.hypot(tx, ty) || 1;
-      pen.cubic([xs, yIn + (E[1] - yIn) * 0.5], [E[0] - (tx / tl) * 90, E[1] - (ty / tl) * 90], E);
-      const handScale = 0.45;    // scroll px per screen px of hand ink
-      order.forEach(([id, rev], i) => {
-        const e = ends(id);
-        const start = P(...(rev ? e.b : e.a)), end = P(...(rev ? e.a : e.b));
-        if (i > 0 && Math.hypot(start[0] - pen.x, start[1] - pen.y) > 2) pen.hop(start, Math.hypot(start[0] - pen.x, start[1] - pen.y) * 0.35);
-        pen.stroke(hand.strokes[id], e.L, !!rev, e.L * k * handScale, end);
+      const { n: host, r: hr } = R('#order'), svg = $('.ink', host);
+      sizeSvg(svg, hr.width, hr.height);
+      const pen = makePen(svg, E - hr.left, 0, 'S', sgn);
+      const h2 = $('.tt-h', host), road = $('#road'), rr0 = rel(road.getBoundingClientRect(), hr);
+      const scooter = $('.art-scooter', road), palm = $('.art-palm svg', road);
+      pen.to(Math.max(2, rel(h2.getBoundingClientRect(), hr).y - beadR()));
+      pen.station(on => on && writeHeadline(h2));
+      const yRoad = rr0.b + 2;
+      pen.to(yRoad - R0);
+      pen.turn('B');
+      const x0 = pen.x, xEnd = S - hr.left + sgn * R0, span = Math.abs(xEnd - x0);
+      const sw = scooter.offsetWidth, roadW = road.offsetWidth, palmW = $('.art-palm', road).offsetWidth;
+      const drive = Math.max(0, roadW - sw - palmW - 24);
+      pen.line(span, Math.max(260, span * 0.55), {
+        onProgress: f => {
+          if (f > 0.02) { drawArt($('svg.art', scooter), { dur: 1.2 }); }
+          if (f > 0.7) drawArt(palm, { dur: 1.6 });
+          gsap.set(scooter, { x: (RTL() ? 1 : -1) * drive * Math.min(1, f * 1.08) });
+        },
       });
-      const c = addChain('footer', host, pen);
-      footer = { hand, fx, k, slot, chain: c, snapTl: null };
+      pen.turn('S').to(hr.height);
+      const c = addChain('order', host, pen);
+      const rr = chainRange(c); lineTrigger(c, { start: rr.start, end: rr.end });
     }
 
-    // ---------------- triggers, in page order ----------------
-    const heroChain = chains[0], storyChain = chains[1], menuChain = chains[2];
-    const heroProxy = { p: 0 };
-    if (!reduce) {
-      const heroTw = gsap.to(heroProxy, {
-        p: 1, ease: 'none', onUpdate: () => heroUpdate(heroProxy.p),
-        scrollTrigger: { trigger: '#hero', start: 'top top', end: () => '+=' + heroDist, pin: true, scrub: 0.35, anticipatePin: 1, invalidateOnRefresh: true },
-      });
-      triggers.push(heroTw); heroPin = heroTw.scrollTrigger;
-    } else heroUpdate(1);
-    lineTrigger(heroChain, { trigger: '#hero', start: 0, end: () => (heroPin ? heroPin.end : 0) + 0.4 * vh() });
-    lineTrigger(storyChain, { start: 'top 60%', end: 'bottom 60%', scrub: fine ? 2.4 : 3 });   // the lattice draws itself slowly, whatever the swipe
+    // ---------------- collab ----------------
+    {
+      const { n: host, r: hr } = R('#collab'), svg = $('.ink', host);
+      sizeSvg(svg, hr.width, hr.height);
+      const pen = makePen(svg, S - hr.left, 0, 'S', -sgn);
+      const h2 = $('.tt-h', host);
+      pen.to(Math.max(2, rel(h2.getBoundingClientRect(), hr).y - beadR()));
+      pen.station(on => on && writeHeadline(h2));
+      pen.to(hr.height);
+      const c = addChain('collab', host, pen);
+      const rr = chainRange(c); lineTrigger(c, { start: rr.start, end: rr.end });
+    }
 
-    menuTween = gsap.to('#menuTrack', {
-      x: () => -SGN() * menuTravel(), ease: 'none',
-      scrollTrigger: { trigger: '#menu', start: 'top top', end: () => '+=' + menuTravel(), pin: true, scrub: 1, anticipatePin: 1, invalidateOnRefresh: true },
+    // ---------------- the glass: the line finds the hand and snaps ----------------
+    {
+      const { n: host, r: hr } = R('#glass'), svg = $('.ink', host);
+      sizeSvg(svg, hr.width, hr.height);
+      const img = $('#muralImg'), ir = img.getBoundingClientRect();
+      // the lowest sparkle above the hand, on the glass (mural units)
+      const LOW = [3991.3, 2385.2], MW = 8022, MH = 5754;
+      const tx = ir.left + (LOW[0] / MW) * ir.width - hr.left, ty = ir.top + (LOW[1] / MH) * ir.height - hr.top;
+      const fr = rel($('#muralFrame').getBoundingClientRect(), hr);
+      const pen = makePen(svg, S - hr.left, 0, 'S', -sgn);
+      const yBend = Math.max(20, fr.y - 30);
+      pen.to(yBend);
+      const k = (ty - yBend) * 0.55;
+      pen.cubic([pen.x, yBend + k], [tx, ty - k * 0.9], [tx, ty], undefined, 'S');
+      const c = addChain('glass', host, pen, { last: true });
+      const total = c.links.reduce((s, l) => s + l.budget, 0);
+      // the line arrives as the glass settles in the middle of the screen
+      lineTrigger(c, { start: () => `top ${Math.round(READ * 100)}%`, end: () => `+=${Math.round(total)}` });
+      ending = { x: tx, y: ty, host, svg };
+      // the glass shows itself around the door as the line comes
+      const frame = $('#muralFrame');
+      const tw = gsap.fromTo(frame, { '--r': 0 }, { '--r': 100, ease: 'none', scrollTrigger: { trigger: frame, start: 'top 92%', end: 'center 55%', scrub: 1.2, invalidateOnRefresh: true } });
+      triggers.push(tw);
+      // (on phones the glass stays still around the door: the line must land on the hand)
+    }
+
+    // the nav takes the colour of the part under it
+    $$('[data-surface]', $('main')).concat([$('#glass')]).forEach(sec => {
+      const sky = $(':scope > .sky', sec), at = sky ? sky.offsetHeight * 0.55 : 0;
+      const st = ScrollTrigger.create({
+        trigger: sec, start: () => `top+=${Math.round(at)} ${Math.round(navH() / 2)}px`, end: () => `bottom ${Math.round(navH() / 2)}px`,
+        onToggle: s => { if (s.isActive) $('#nav').dataset.ink = sec.dataset.surface; },
+      });
+      triggers.push({ scrollTrigger: st, kill: () => {} });
     });
-    triggers.push(menuTween); menuPin = menuTween.scrollTrigger;
-    lineTrigger(menuChain, { trigger: '#menu', start: () => menuPin.start - 0.6 * vh(), end: () => menuPin.end + 0.4 * vh() });
-    lineTrigger(chains[3], { start: 'top 60%', end: 'bottom 60%' });
-    lineTrigger(chains[4], { start: 'top 60%', end: 'bottom 60%' });
-    lineTrigger(chains[5], { start: 'top 60%', end: () => ScrollTrigger.maxScroll(window) - (small() ? 140 : 8) });
-
-    // the nav takes the ink of the surface under it
-    triggers.push(gsap.to({}, { scrollTrigger: { trigger: '#story', start: () => `top+=${Math.round(duskH() * 0.55)} 48px`, invalidateOnRefresh: true, onEnter: () => ($('#nav').dataset.ink = 'dark'), onLeaveBack: () => ($('#nav').dataset.ink = 'light') } }));
-
-    if (reduce) chains.forEach(c => { c.raw = 1; draw(c, 1); });
-    else chains.forEach(c => { c.raw = 0; draw(c, 0); });
+  }
+  const navH = () => $('#nav').offsetHeight || 72;
+  // stations along a vertical run, then on to the bottom
+  function stations(pen, stops, bottom) {
+    for (const [y, fn] of stops) {
+      const at = Math.max(pen.y + 2, y - beadR());
+      if (at + 2 * beadR() > bottom - 4) continue;
+      pen.to(at);
+      pen.station(on => on && fn());
+    }
+    pen.to(bottom);
+  }
+  function sound(name, arg) { if (siteReady && !quiet && sfx[name]) sfx[name](arg); }
+  // the hat: «تادا!»
+  function tadaBurst(svg) {
+    if (reduce || quiet) return;
+    sound('tada');
+    const r = svg.getBoundingClientRect();
+    setTimeout(() => spawn(null, r.left + r.width * 0.72, r.top + r.height * 0.2, true, 14, { radial: true, speed: 60, spread: 6, life: 1, rise: 6, sizeMax: 5 }), 900);
   }
 
   // ---------- the ending: the hand snaps, the magic takes its place ----------
-  function footerCheck() {
-    if (!footer || reduce) return;
-    const p = footer.chain.p;
-    if (p >= 0.999 && !parked) park();
-    else if (p < 0.985 && parked) unpark();
-  }
-  function park() {
-    parked = true;
-    const { hand, fx } = footer;
-    const tl = gsap.timeline();
-    footer.snapTl = tl;
-    const keys = addSnap(tl, hand, fx, 0.05, { stars: false });
-    tl.add(() => sfx.snap(), keys.R);
-    tl.add(() => {
-      // the release launches the magic from the fingertips into its own place
-      const bb = hand.stars[2].getBoundingClientRect();
-      gsap.fromTo(magic, { x: headState.x, y: headState.y, scale: 1 }, {
-        x: bb.left + bb.width / 2, y: bb.top + bb.height / 2,
-        scale: Math.max(0.2, bb.width / 19.6), duration: 0.34, ease: 'power3.out',
-        onComplete: () => {
-          gsap.to(magic, { opacity: 0, duration: 0.2 });
-          headState.shown = false;
-          gsap.fromTo(hand.stars[2], { opacity: 1, scale: 1.7 }, { scale: 1, duration: 0.5, ease: 'back.out(3)' });
-          sfx.land();
-        },
-      });
-    }, keys.HIT);
-    [1, 0].forEach((i, n) => {
-      const at = keys.HIT + 0.42 + n * 0.1;
-      tl.to(hand.stars[i], { opacity: 1, duration: 0.08, ease: 'none' }, at);
-      tl.fromTo(hand.stars[i], { scale: 0, rotation: -20 }, { scale: 1, rotation: 0, duration: 0.34, ease: 'back.out(3)' }, at);
-    });
-    tl.add(() => sfx.tada(), keys.HIT + 0.42);
-  }
-  function unpark() {
-    parked = false;
-    const { hand } = footer;
-    if (footer.snapTl) footer.snapTl.kill();
-    gsap.killTweensOf(magic);
-    gsap.set(magic, { clearProps: 'transform' });
-    headState.shown = false;
-    gsap.set(hand.stars, { opacity: 0, scale: 0 });
-    gsap.set([hand.root, hand.gMid, hand.gThumb, hand.gRing, hand.gPinky], { rotation: 0, x: 0, y: 0 });
-  }
-  function replaySnap() {
-    if (!parked || !footer || reduce) return;
-    const tl = gsap.timeline();
-    const keys = addSnap(tl, footer.hand, footer.fx, 0.02, { stars: false });
-    tl.add(() => sfx.snap(), keys.R);
-    footer.hand.stars.forEach((s, n) => tl.fromTo(s, { scale: 0.4 }, { scale: 1, duration: 0.34, ease: 'back.out(3)' }, keys.HIT + n * 0.06));
-  }
-
-  // ======================================================================
-  // Hero: the film (Golestan method), and the line-drawn cup until it arrives
-  // ======================================================================
-  // The cup from the first design: drawn, poured with ube, iced, given the arched
-  // Tada sticker, then the three kit sparkles. Scrubbed by the same progress as the film.
-  let scene = null;
-  function buildScene() {
-    const svg = $('#heroScene'); svg.replaceChildren();
-    const defs = el('defs', {}, svg);
-    const clip = el('clipPath', { id: 'cup-in' }, defs);
-    el('path', { d: 'M46 92L74 384Q76 404 98 404H202Q224 404 226 384L254 92Z' }, clip);
-    // the cup waits, barely there, for the magic to draw it: the first screen is never empty
-    const ghost = el('g', { class: 'sc-ghost' }, svg);
-    ['M34 80H266', 'M42 80L72 386Q74 410 100 410H200Q226 410 228 386L258 80', 'M100 384V268A50 50 0 0 1 200 268V384Z'].forEach(d => el('path', { d }, ghost));
-    const pour = el('path', { class: 'sc sc-pour', d: 'M168 -170V300' }, svg);
-    const liquidG = el('g', { 'clip-path': 'url(#cup-in)' }, svg);
-    const liquid = el('rect', { class: 'sc-liquid', x: 30, y: 400, width: 240, height: 300 }, liquidG);
-    // ice: each cube sits in its own float group, so it can bob on the surface while the
-    // scroll timeline drops it in and draws it
-    const floats = [];
-    const ice = [[92, 118, -8], [140, 104, 10], [186, 122, -4]].map(([x, y, r]) => {
-      const fg = el('g', { class: 'sc-float' }, svg);
-      floats.push({ g: fg, cx: x + 19, cy: y + 19 });
-      return el('rect', { class: 'sc', x, y, width: 38, height: 38, rx: 9, transform: `rotate(${r} ${x + 19} ${y + 19})` }, fg);
-    });
-    const cup = [
-      el('path', { class: 'sc', d: 'M34 80H266' }, svg),
-      el('path', { class: 'sc', d: 'M42 80L72 386Q74 410 100 410H200Q226 410 228 386L258 80' }, svg),
-      el('path', { class: 'sc sc-thin', d: 'M38 92H262' }, svg),
-    ];
-    const arch = el('path', { class: 'sc sc-sticker', d: 'M100 384V268A50 50 0 0 1 200 268V384Z' }, svg);
-    arch.style.fill = '#35084C'; arch.style.fillOpacity = 0;   // the sticker: a night label the mark glows on
-    // the whole TADA mark (hand and its three sparkles), uniformly scaled, glowing
-    const glowF = el('filter', { id: 'mark-glow', x: '-60%', y: '-60%', width: '220%', height: '220%' }, defs);
-    const blur = el('feGaussianBlur', { in: 'SourceGraphic', stdDeviation: 1.6, result: 'b' }, glowF);
-    const merge = el('feMerge', {}, glowF);
-    for (let k = 0; k < 3; k++) el('feMergeNode', { in: 'b' }, merge);
-    el('feMergeNode', { in: 'SourceGraphic' }, merge);
-    const hs = 126 / VH;
-    const markWrap = el('g', fine ? { class: 'sc-mark', filter: 'url(#mark-glow)' } : { class: 'sc-mark' }, svg);
-    const mark = el('g', { transform: `translate(${150 - (VW * hs) / 2 - VX * hs} ${314 - (VH * hs) / 2 - VY * hs}) scale(${hs})` }, markWrap);
-    const markStrokes = HAND.strokes.map(st => el('path', { class: 'sc sc-markline', d: st.d, 'stroke-width': HAND.stroke }, mark));
-    const markStars = HAND.stars.map(st => {
-      const pth = el('path', { class: 'sc-mark-star', d: st.d }, mark);
-      gsap.set(pth, { svgOrigin: `${st.cx} ${st.cy}`, scale: 0 });
-      return pth;
-    });
-    // the three kit sparkles above the rim
-    const sparks = HAND.stars.map((st, i) => {
-      const at = [[262, 30, 0.42], [292, 66, 0.3], [24, 150, 0.36]][i];
-      const g = el('g', { transform: `translate(${at[0]} ${at[1]}) scale(${at[2]}) translate(${-st.cx} ${-st.cy})` }, svg);
-      const pth = el('path', { class: 'sc-star', d: st.d }, g);
-      gsap.set(pth, { svgOrigin: `${st.cx} ${st.cy}`, scale: 0, rotation: -90 });
-      return pth;
-    });
-    const dash = els => els.forEach(p => { const L = p.getTotalLength(); p.style.strokeDasharray = `${L} ${L + 2}`; p.style.strokeDashoffset = L + 1; p.dataset.len = L; });
-    dash([pour, ...ice, ...cup, arch, ...markStrokes]);
-    const off = p => +p.dataset.len + 1;
-    const tl = gsap.timeline({ paused: true, defaults: { ease: 'none' } });
-    tl.to(cup, { strokeDashoffset: 0, duration: 0.22, stagger: 0.03 }, 0.02);
-    tl.to(pour, { strokeDashoffset: 0, duration: 0.14 }, 0.2);
-    tl.fromTo(liquid, { attr: { y: 400 } }, { attr: { y: 150 }, duration: 0.34, ease: 'power1.inOut' }, 0.28);
-    tl.fromTo(ice, { y: -30 }, { y: 0, duration: 0.14, stagger: 0.04 }, 0.42);
-    tl.to(ice, { strokeDashoffset: 0, duration: 0.14, stagger: 0.04 }, 0.42);
-    tl.to(pour, { strokeDashoffset: (i, p) => -off(p), duration: 0.1 }, 0.6);
-    tl.to([arch, ...markStrokes], { strokeDashoffset: 0, duration: 0.14, stagger: 0.02 }, 0.66);
-    tl.fromTo(arch, { fillOpacity: 0 }, { fillOpacity: 0.82, duration: 0.12 }, 0.7);
-    tl.to(markStars, { scale: 1, duration: 0.06, stagger: 0.02, ease: 'back.out(3)' }, 0.8);
-    tl.to(sparks, { scale: 1, rotation: 0, duration: 0.08, stagger: 0.025, ease: 'back.out(3)' }, 0.84);
-    tl.to({}, { duration: 0.06 }, 0.94);
-    // alive while the hero is on screen: the ice floats, the mark's glow breathes
-    if (!reduce) {
-      const idle = gsap.timeline({ paused: true });
-      const R = (a, b) => a + Math.random() * (b - a);
-      floats.forEach(({ g, cx, cy }, i) => {
-        gsap.set(g, { svgOrigin: `${cx} ${cy}` });
-        const parts = [
-          gsap.to(g, { y: R(-2.6, -1.6), duration: R(2.3, 3.1), ease: 'sine.inOut', yoyo: true, repeat: -1 }),
-          gsap.to(g, { rotation: (i % 2 ? 1 : -1) * R(2.5, 4.5), duration: R(3.4, 4.6), ease: 'sine.inOut', yoyo: true, repeat: -1 }),
-          gsap.to(g, { x: (i % 2 ? -1 : 1) * R(1.2, 2.2), duration: R(4.2, 5.8), ease: 'sine.inOut', yoyo: true, repeat: -1 }),
-        ];
-        parts.forEach(t => { t.totalTime(Math.random() * t.duration() * 2); idle.add(t, 0); });
-      });
-      if (fine) idle.add(gsap.to(blur, { attr: { stdDeviation: 3.4 }, duration: 2.6, ease: 'sine.inOut', yoyo: true, repeat: -1 }), 0);
-      new IntersectionObserver(([en]) => (en.isIntersecting ? idle.play() : idle.pause())).observe(svg);
+  let snapped = false;
+  function endingCheck() {
+    const c = chains[chains.length - 1];
+    if (!c || !c.last || !ending) return;
+    if (c.p >= 0.999 && !snapped) {
+      snapped = true; parked = true;
+      gsap.to(magic, { opacity: 0, scale: 0.4, duration: 0.5, ease: 'power2.in' });
+      if (!reduce && !quiet) {
+        sound('snap');
+        const hr = ending.host.getBoundingClientRect();
+        spawn(null, hr.left + ending.x, hr.top + ending.y, true, 16, { radial: true, speed: 54, spread: 4, life: 1.1, rise: 4, keep: true });
+      }
+    } else if (c.p < 0.995 && snapped) {
+      snapped = false; parked = false;
+      gsap.to(magic, { opacity: 1, scale: 1, duration: 0.5, ease: 'power2.out' });
     }
-    return tl;
-  }
-
-  const RANGES = [[0.12, 0.33], [0.35, 0.58], [0.60, 0.83], [0.85, 1.01]];   // each holds until just before the next
-  let capShown = -1;
-  const heroCue = $('.hero-cue');
-  const heroEdge = [$('.hero-frame'), $('.hero-vignette')];
-  function heroUpdate(p) {
-    if (heroVideo) heroVideo(p);
-    if (heroCue) heroCue.style.opacity = Math.max(0, 1 - p / 0.06).toFixed(3);
-    const melt = reduce ? 0 : Math.min(1, Math.max(0, (p - 0.88) / 0.12)), keep = (1 - melt).toFixed(3);
-    if (heroEdge[0]) heroEdge[0].style.opacity = keep;
-    if (heroEdge[1]) heroEdge[1].style.opacity = keep;
-    if (scene && $('#heroMedia').dataset.mode !== 'video') scene.progress(p);
-    const caps = $$('#heroCaptions .hero-cap');
-    let active = -1;
-    caps.forEach((c, i) => {
-      const [a, b] = RANGES[i] || [2, 2];
-      const fin = Math.min(1, Math.max(0, (p - a) / 0.04));
-      const fout = i === caps.length - 1 ? 1 : Math.min(1, Math.max(0, (b - p) / 0.04));
-      const o = reduce ? 1 : fin * fout;
-      c.style.opacity = o;
-      if (o > 0.5) active = i;
-    });
-    $('.hero-line').style.opacity = reduce ? 1 : 1 - Math.min(1, Math.max(0, (p - 0.08) / 0.05));
-    if (active !== capShown) { if (active >= 0 && capShown !== -2) (active === caps.length - 1 ? sfx.tada : sfx.chapter)(); capShown = active; }
-  }
-  function setupHeroVideo() {
-    const box = $('#heroMedia'), H = SITE.hero || {};
-    box.replaceChildren(); box.dataset.mode = 'none';
-    const src = small() && H.videoMobile ? H.videoMobile : H.video;
-    if (reduce) {
-      if (H.poster) { const img = document.createElement('img'); img.src = H.poster; img.alt = ''; box.appendChild(img); box.dataset.mode = 'poster'; }
-      return null;
-    }
-    if (!src) return null;
-    const v = document.createElement('video');
-    v.muted = true; v.defaultMuted = true; v.playsInline = true; v.preload = 'auto';
-    v.setAttribute('muted', ''); v.setAttribute('playsinline', ''); v.setAttribute('aria-hidden', 'true');
-    if (H.poster) v.poster = H.poster;
-    if (H.videoWebm && !small()) { const s = document.createElement('source'); s.src = H.videoWebm; s.type = 'video/webm'; v.appendChild(s); }
-    const s2 = document.createElement('source'); s2.src = src; s2.type = 'video/mp4'; v.appendChild(s2);
-    box.appendChild(v);
-    v.load(); // iOS Safari needs an explicit load before the first seek
-    v.addEventListener('loadedmetadata', () => { if (v.duration > 0) box.dataset.mode = 'video'; });
-    v.addEventListener('error', () => { box.dataset.mode = 'none'; });
-    let want = 0, busy = false;
-    return p => {
-      if (!v.duration) return;
-      want = Math.min(v.duration - 0.04, p * v.duration);
-      if (busy) return;
-      busy = true;
-      requestAnimationFrame(() => { busy = false; if (v.paused && Math.abs(v.currentTime - want) > 0.01) v.currentTime = want; });
-    };
   }
 
   // ======================================================================
-  // Lenis, nav, cursor, sound
+  // Lenis, nav, phone menu, cursor, sound
   // ======================================================================
   let lenis = null;
   function setupLenis() {
-    if (!window.Lenis || reduce || !matchMedia('(pointer: fine)').matches) return;
-    lenis = new Lenis({ lerp: 0.09, smoothWheel: true, syncTouch: false });
+    if (!window.Lenis || reduce || !fine) return;
+    lenis = new Lenis({ lerp: 0.085, smoothWheel: true, syncTouch: false });
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add(t => lenis.raf(t * 1000));
     gsap.ticker.lagSmoothing(0);
-    // the head is placed after Lenis has scrolled in the same frame, so it never trails the line
-    gsap.ticker.remove(tick); gsap.ticker.add(tick);
+    gsap.ticker.remove(tick); gsap.ticker.add(tick);   // the head after the scroll, never behind the line
   }
   function goTo(id) {
     const target = $(id); if (!target) return;
-    const y = id === '#top' ? 0 : target.getBoundingClientRect().top + scrollY - 8;
-    if (lenis) lenis.scrollTo(y, { duration: 1.4 }); else scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' });
+    const y = id === '#top' ? 0 : target.getBoundingClientRect().top + scrollY - (id === '#menu' ? 0 : 6);
+    if (lenis) lenis.scrollTo(y, { duration: 1.6 }); else scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' });
   }
   $$('.nav-links a, .nav-mark').forEach(a => a.addEventListener('click', e => {
     const id = a.getAttribute('href'); if (!id || !id.startsWith('#')) return;
-    e.preventDefault();
-    if (a.classList.contains('nav-mark') && small()) { openMenu(a); return; }   // on phones the mark opens the menu
-    goTo(id);
+    e.preventDefault(); sfx.nav(); goTo(id);
   }));
+  addEventListener('scroll', () => $('#nav').classList.toggle('is-scrolled', scrollY > 40), { passive: true });
 
-  // ---------- phone menu ----------
-  // Opens as a circle from the mark or the «فهرست» button, with a snap and a burst of
-  // sparkles; the page behind is inert while it is open.
-  const mm = $('#mMenu'), menuBtn = $('#menuBtn');
-  let mmOpener = null, mmTl = null;
-  const starSvg = `<svg viewBox="${LOW.cx - LOW.r} ${LOW.cy - LOW.r} ${2 * LOW.r} ${2 * LOW.r}" aria-hidden="true"><path d="${LOW.d}"/></svg>`;
-  $$('.mmenu-links a', mm).forEach(a => a.insertAdjacentHTML('afterbegin', starSvg));
-  const outside = () => [$('main'), $('footer'), $('#nav')];
-  const centre = n => { const r = n.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
-  function openMenu(from) {
-    if (!mm.hidden) return;
-    mmOpener = from || menuBtn;
-    const [cx, cy] = centre(mmOpener);
-    mm.hidden = false; menuBtn.setAttribute('aria-expanded', 'true'); document.documentElement.classList.add('has-overlay');
-    outside().forEach(n => { n.inert = true; });
-    document.documentElement.style.overflow = 'hidden';
-    if (lenis) lenis.stop();
-    sfx.snap();
-    if (mmTl) mmTl.kill();
-    const parts = $$('.mmenu-links a, .mmenu-tools', mm);
-    if (reduce) { gsap.set(mm, { clearProps: 'clipPath' }); gsap.set(parts, { opacity: 1, y: 0 }); }
-    else {
-      mmTl = gsap.timeline()
-        .fromTo(mm, { clipPath: `circle(0px at ${cx}px ${cy}px)` }, { clipPath: `circle(${Math.hypot(innerWidth, innerHeight) * 1.05}px at ${cx}px ${cy}px)`, duration: 0.75, ease: 'power3.inOut' })
-        .fromTo(parts, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.06, ease: 'power3.out' }, 0.22);
-      spawn(null, cx, cy, true, 10, { radial: true, speed: 60, spread: 4, life: 0.7, rise: 0 });
-    }
-    $('.mmenu-links a', mm).focus({ preventScroll: true });
+  const mm = $('#mMenu');
+  const outside = () => [$('main'), $('footer'), $('.nav-links'), $('.nav-mark')];
+  function openMenu() {
+    mm.hidden = false; $('#menuBtn').setAttribute('aria-expanded', 'true');
+    outside().forEach(n => n && (n.inert = true));
+    lenis && lenis.stop(); document.documentElement.style.overflow = 'hidden';
+    if (!reduce) gsap.fromTo(mm, { opacity: 0 }, { opacity: 1, duration: 0.45, ease: 'power2.out' });
+    if (!reduce) gsap.fromTo($$('.mmenu-links a', mm), { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.05, ease: 'power2.out', delay: 0.05 });
+    sfx.nav();
+    $('.mmenu-close', mm).focus();
   }
   function closeMenu(then) {
-    if (mm.hidden) return;
     const done = () => {
-      mm.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); document.documentElement.classList.remove('has-overlay');
-      outside().forEach(n => { n.inert = false; });
-      document.documentElement.style.overflow = '';
-      if (lenis) lenis.start();
-      if (then) then(); else if (mmOpener) mmOpener.focus({ preventScroll: true });
+      mm.hidden = true; $('#menuBtn').setAttribute('aria-expanded', 'false');
+      outside().forEach(n => n && (n.inert = false));
+      document.documentElement.style.overflow = ''; lenis && lenis.start();
+      if (then) then(); else $('#menuBtn').focus();
     };
-    if (mmTl) mmTl.kill();
-    if (reduce) { done(); return; }
-    const [cx, cy] = centre(mmOpener || menuBtn);
-    mmTl = gsap.to(mm, { clipPath: `circle(0px at ${cx}px ${cy}px)`, duration: 0.55, ease: 'power3.inOut', onComplete: done });
+    if (reduce) done(); else gsap.to(mm, { opacity: 0, duration: 0.3, ease: 'power1.in', onComplete: done });
   }
-  menuBtn.addEventListener('click', () => openMenu(menuBtn));
-
-  // ---------- a product, up close ----------
-  // A tap on the product in the centre lifts it out of the shelf onto the night: it grows
-  // from where it sat, its frame draws, its corner sparkles open and the magic bursts from
-  // them. A tap on a product at the side first brings it to the centre. Closing (the
-  // button, the veil, Escape, or a swipe down) sends it back to its place.
-  const zoom = $('#zoom'), zoomStage = $('#zoomStage'), zoomClose = $('#zoomClose');
-  let zoomFrom = null, zoomTl = null;
-  zoomClose.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path class="zc-line" d="M6 6L18 18M18 6L6 18"/></svg>`;
-  const flip = (from, to) => ({ x: from.left + from.width / 2 - (to.left + to.width / 2), y: from.top + from.height / 2 - (to.top + to.height / 2), scale: from.width / to.width });
-  function openZoom(lab) {
-    if (!zoom.hidden || !lab) return;
-    zoomFrom = lab;
-    const card = lab.cloneNode(true);
-    card.removeAttribute('style'); card.removeAttribute('tabindex'); card.removeAttribute('aria-haspopup');
-    card.classList.remove('fit-0', 'fit-1', 'fit-2', 'is-hover', 'is-framed', 'is-front');
-    $$('.label-arrow', card).forEach(b => b.remove());
-    $$('[style]', card).forEach(n => n.removeAttribute('style'));
-    $$('.label-band', card).forEach(b => b.classList.add('is-lit'));
-    card.classList.add('is-zoomed');
-    zoomStage.replaceChildren(card); zoomStage.scrollTop = 0;
-    zoom.setAttribute('aria-label', ($('.label-name', card) || {}).textContent || '');
-    zoomClose.setAttribute('aria-label', T().menu.close); zoomClose.title = T().menu.close;
-    zoom.hidden = false; document.documentElement.classList.add('has-overlay');
-    outside().forEach(n => { n.inert = true; });
-    document.documentElement.style.overflow = 'hidden';
-    if (lenis) lenis.stop();
-    sfx.starOpen();
-    const rect = $('.label-frame rect', card), corners = $$('.label-corner', card), sheen = $('.label-sheen', card);
-    gsap.set(rect, { strokeDashoffset: 1 }); gsap.set(corners, { scale: 0, opacity: 0 });
-    if (zoomTl) zoomTl.kill();
-    if (reduce) { gsap.set(rect, { strokeDashoffset: 0 }); gsap.set(corners, { scale: 1, opacity: 1 }); }
-    else {
-      const f = flip(lab.getBoundingClientRect(), card.getBoundingClientRect());
-      zoomTl = gsap.timeline()
-        .fromTo('.zoom-veil', { opacity: 0 }, { opacity: 1, duration: 0.55, ease: 'power2.out' }, 0)
-        .fromTo(card, { ...f, transformOrigin: '50% 50%' }, { x: 0, y: 0, scale: 1, duration: 1.0, ease: 'expo.out' }, 0)
-        .fromTo(zoomClose, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.55, ease: 'back.out(2)' }, 0.4)
-        .to(rect, { strokeDashoffset: 0, duration: 1.4, ease: 'power2.inOut' }, 0.35)
-        .fromTo(sheen, { xPercent: -140, opacity: 1 }, { xPercent: 260, duration: 1.6, ease: 'power1.inOut' }, 0.5)
-        .fromTo(corners, { scale: 0, rotation: -45, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.8, stagger: 0.1, ease: 'back.out(2)' }, 1.0)
-        .add(() => {
-          const r = $('.label-frame', card).getBoundingClientRect();
-          [[r.left, r.top], [r.right, r.top], [r.left, r.bottom], [r.right, r.bottom]].forEach(([x, y]) => spawn(null, x, y, true, 5, { radial: true, speed: 42, spread: 3, life: 0.9, rise: 0 }));
-          sfx.tada();
-        }, 1.1);
-    }
-    zoomClose.focus({ preventScroll: true });
-  }
-  function closeZoom() {
-    if (zoom.hidden) return;
-    const card = $('.label', zoomStage), lab = zoomFrom;
-    const done = () => {
-      zoom.hidden = true; zoomStage.replaceChildren(); document.documentElement.classList.remove('has-overlay');
-      outside().forEach(n => { n.inert = false; });
-      document.documentElement.style.overflow = '';
-      if (lenis) lenis.start();
-      if (lab) lab.focus({ preventScroll: true });
-    };
-    if (zoomTl) zoomTl.kill();
-    if (reduce || !card || !lab) { done(); return; }
-    sfx.land();
-    const f = flip(lab.getBoundingClientRect(), card.getBoundingClientRect());
-    zoomTl = gsap.timeline({ onComplete: done })
-      .to(card, { x: '+=' + f.x, y: '+=' + f.y, scale: f.scale, duration: 0.65, ease: 'power3.inOut' }, 0)
-      .to(['.zoom-veil', zoomClose], { opacity: 0, duration: 0.45, ease: 'power2.in' }, 0.12);
-  }
-  zoomClose.addEventListener('click', closeZoom);
-  $('.zoom-veil', zoom).addEventListener('click', closeZoom);
-  zoomStage.addEventListener('click', e => { if (e.target === zoomStage) closeZoom(); });
-  addEventListener('keydown', e => { if (e.key === 'Escape' && !zoom.hidden) closeZoom(); });
-  {   // a swipe down closes it, when the card is scrolled to its top
-    let y0 = 0;
-    zoomStage.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, { passive: true });
-    zoomStage.addEventListener('touchend', e => { if (e.changedTouches[0].clientY - y0 > 90 && zoomStage.scrollTop <= 0) closeZoom(); }, { passive: true });
-  }
-  // the product in the centre opens; one at the side first comes to the centre
-  const pickLabel = lab => {
-    const labs = $$('#menuTrack .label'), i = labs.indexOf(lab);
-    if (i < 0) return;
-    if (i !== menuActive) goMenu(i); else openZoom(lab);
-  };
-  $('#menuTrack').addEventListener('click', e => {
-    const lab = e.target.closest('.label'); if (!lab || e.target.closest('a, button')) return;
-    pickLabel(lab);
-  });
-  $('#menuTrack').addEventListener('keydown', e => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    const lab = e.target.closest('.label'); if (!lab || e.target !== lab) return;
-    e.preventDefault(); pickLabel(lab);
-  });
-  $('.skip-link').addEventListener('click', e => {
-    e.preventDefault(); goTo('#story');
-    const h = $('#story .h2'); h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true });
-  });
+  $('#menuBtn').addEventListener('click', openMenu);
   $('.mmenu-close', mm).addEventListener('click', () => closeMenu());
-  $$('.mmenu-links a', mm).forEach(a => a.addEventListener('click', e => {
-    e.preventDefault();
-    const id = a.getAttribute('href');
-    closeMenu(() => goTo(id));
-  }));
-  $('.mmenu-lang', mm).addEventListener('click', () => $('#langToggle').click());
-  addEventListener('keydown', e => { if (e.key === 'Escape' && !mm.hidden) closeMenu(); });
-  addEventListener('resize', () => { if (!small() && !mm.hidden) closeMenu(() => {}); });
-  addEventListener('scroll', () => $('#nav').classList.toggle('is-scrolled', scrollY > 12), { passive: true });
+  mm.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeMenu(); return; }
+    if (e.key !== 'Tab') return;
+    const f = $$('a, button', mm).filter(n => !n.hidden && n.offsetParent !== null), a = f[0], b = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === a) { e.preventDefault(); b.focus(); }
+    else if (!e.shiftKey && document.activeElement === b) { e.preventDefault(); a.focus(); }
+  });
+  $$('.mmenu-links a', mm).forEach(a => a.addEventListener('click', e => { e.preventDefault(); const id = a.getAttribute('href'); closeMenu(() => goTo(id)); }));
 
-  // The pointer keeps its native cursor. Moving it leaves a rare, tiny sparkle; a click
-  // opens a thin ring and a few sparkles; on a link or a button the burst is richer and
-  // the control itself glows for a moment.
-  const isDarkAt = t => {
-    const surf = t && t.closest ? t.closest('.label, [data-surface]') : null;
-    return !!surf && (surf.dataset.surface === 'dark' || ['ube', 'matcha', 'night', 'purple'].includes(surf.dataset.tone));
-  };
-  function setupPointerMagic() {
-    if (reduce) return;
-    let lx = -999, ly = -999, lt = 0;
+  $$('.sound-toggle').forEach(b => b.addEventListener('click', () => { SND.toggle(); paintSound(); if (SND.enabled()) sfx.enable(); }));
+  // sound wakes with the first touch (a browser rule); every link and button answers softly
+  const wake = () => SND.unlock();
+  addEventListener('pointerdown', wake, { passive: true }); addEventListener('keydown', wake);
+  document.addEventListener('click', e => { const b = e.target.closest('a, button'); if (b && !b.classList.contains('sound-toggle')) sfx.tap(); });
+
+  // the cursor shows the dots of the glass where it passes
+  const aura = $('#aura');
+  if (fine && !reduce) {
     addEventListener('pointermove', e => {
-      if (e.pointerType !== 'mouse' || !siteReady) return;
-      const now = performance.now();
-      if (Math.hypot(e.clientX - lx, e.clientY - ly) < 34 || now - lt < 90) return;
-      lx = e.clientX; ly = e.clientY; lt = now;
-      if (Math.random() < 0.55) spawn(null, e.clientX, e.clientY, isDarkAt(e.target), 1, { spread: 4, speed: 10, sizeMin: 1.4, sizeMax: 2.6, bigChance: 0, life: 0.5, rise: 6 });
+      if (e.pointerType !== 'mouse') return;
+      aura.style.setProperty('--mx', e.clientX + 'px'); aura.style.setProperty('--my', e.clientY + 'px');
+      if (!aura.classList.contains('is-on') && siteReady) aura.classList.add('is-on');
     }, { passive: true });
-    addEventListener('pointerdown', e => {
-      if (e.button > 0 || !siteReady || e.pointerType === 'touch') return;
-      const ctrl = e.target.closest && e.target.closest('a, button, [role="button"], .footer-hand, .label');
-      const dark = isDarkAt(e.target);
-      ring(e.clientX, e.clientY, dark, ctrl ? 22 : 15);
-      spawn(null, e.clientX, e.clientY, dark, ctrl ? 9 : 5, { spread: 2, speed: ctrl ? 70 : 46, sizeMin: 1.6, sizeMax: 3.4, bigChance: ctrl ? 0.3 : 0.1, life: 0.55, rise: 4, radial: true });
-      if (ctrl && !ctrl.classList.contains('label')) {
-        ctrl.classList.remove('is-magic'); void ctrl.offsetWidth; ctrl.classList.add('is-magic');
-        setTimeout(() => ctrl.classList.remove('is-magic'), 900);
-      }
-    }, { passive: true });
+    document.documentElement.addEventListener('mouseleave', () => aura.classList.remove('is-on'));
   }
-
-  SND.bind();
-  SND.onChange(paintSound);
-  $$('.sound-toggle').forEach(b => b.addEventListener('click', () => { SND.toggle(); if (SND.enabled()) sfx.toggle(); }));
-  $('#footerHand').addEventListener('click', replaySnap);
-  $('#footerHand').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); replaySnap(); } });
-  $('#footerHand').tabIndex = 0;
 
   // ======================================================================
-  // Boot
+  // The entrance: the door draws itself while the site loads
   // ======================================================================
-  applyLang();
-  buildMotifs();
-  buildField();
-  scene = buildScene();
-  heroVideo = setupHeroVideo();
-  const navMark = $('#navMark'), heroWord = $('#heroWord');
-
-  let started = false;
-  async function startSite() {
-    if (started) return; started = true;
-    await document.fonts.ready;
-    setupLenis();
-    setupPointerMagic();
-    buildRoute();
-    ScrollTrigger.refresh();
-    siteReady = true;
-    // the birth of the magic: it appears on the logotype's last foot
-    if (!reduce) {
-      birthDone = true;
-      gsap.fromTo(magic, { scale: 0 }, { scale: 1, duration: 0.7, ease: 'back.out(2.5)', delay: 0.05 });
-      const b = chains[0] && startOf(chains[0]);
-      if (b) { const sp = screenPoint(b.el, b.len); spawn(b.el, sp.lx, sp.ly, true, 6, { keep: true }); }
-      sfx.bubble();
-    }
-  }
-
-  // ---------- the entrance: everything loads, then one tap lets the sound in ----------
-  // Fonts, the page's own files and (once it exists) the whole hero film are loaded
-  // before anyone enters; the film is fetched in full so scrubbing never waits.
-  function fetchWithProgress(url, onP) {
-    return fetch(url).then(async res => {
-      if (!res.ok || !res.body) throw new Error('fetch');
-      const total = +res.headers.get('content-length') || 0, reader = res.body.getReader(), chunks = [];
-      let got = 0;
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value); got += value.length;
-        if (total) onP(Math.min(0.99, got / total));
-      }
-      return URL.createObjectURL(new Blob(chunks, { type: res.headers.get('content-type') || 'video/mp4' }));
-    });
-  }
   function preload(onProgress) {
     const parts = {};
     const set = (k, v) => { parts[k] = v; const ks = Object.keys(parts); onProgress(ks.reduce((a, q) => a + parts[q], 0) / ks.length); };
@@ -1769,104 +1009,135 @@
     set('fonts', 0); jobs.push(document.fonts.ready.then(() => set('fonts', 1)));
     if (document.readyState === 'complete') set('page', 1);
     else { set('page', 0); jobs.push(new Promise(r => addEventListener('load', () => { set('page', 1); r(); }, { once: true }))); }
-    const H = SITE.hero || {}, src = !reduce && (small() && H.videoMobile ? H.videoMobile : H.video);
-    if (src && location.protocol !== 'file:') {
-      set('film', 0);
-      jobs.push(fetchWithProgress(src, f => set('film', f)).then(url => {
-        set('film', 1);
-        const v = $('#heroMedia video');
-        if (v) { v.replaceChildren(); v.src = url; v.load(); }
-      }).catch(() => set('film', 1)));
-    }
     return Promise.all(jobs);
   }
-  // The entrance: the star breathes and a bar of light fills as the site loads. Sound is
-  // on from the first moment: where the browser already lets the site sound, each stretch
-  // of the light has a soft note and the site opens by itself with a chime. Phones and
-  // Safari only let a page sound after the visitor touches it, so there the full bar
-  // becomes the first piece of magic: the star waits, glowing, and one touch opens the
-  // site with its sound, so the snap and every note after it are heard.
-  function entrance() {
+  const firstVisit = (() => { try { return !sessionStorage.getItem('tada.door'); } catch { return true; } })();
+  const sides = () => [$('.sill'), $('.hero-words'), $('.hero-hours'), $('.hero-cue'), $('#nav')];
+
+  function enterDoor() {
     return new Promise(resolve => {
-      const g = $('#ldGate');
-      if (!g) { resolve(); return; }
-      const barBox = $('.ld-gate-bar', g), bar = $('i', barBox), label = $('.ld-gate-label', g);
-      $('.ld-gate-star', g).innerHTML = `<svg viewBox="${LOW.cx - LOW.r} ${LOW.cy - LOW.r} ${2 * LOW.r} ${2 * LOW.r}"><path d="${LOW.d}"/></svg>`;
-      const lockWas = document.documentElement.style.overflow;
-      document.documentElement.style.overflow = 'hidden';
-      let heard = false, notes = 0, waiting = false, done = false;
-      SND.probe().then(ok => { if (ok) heard = true; });
-      const shown = { v: 0 };
-      const render = () => {
-        bar.style.transform = `scaleX(${shown.v})`;
-        barBox.style.setProperty('--p', shown.v.toFixed(4));
-        barBox.setAttribute('aria-valuenow', Math.round(shown.v * 100));
-        while (heard && SND.enabled() && notes < 4 && shown.v >= 0.18 + notes * 0.24) sfx.gateNote(notes++);
-      };
-      const open = () => {
+      const { L } = archFeet();
+      door.arch.style.strokeDasharray = `${L} ${L + 2}`;
+      door.arch.style.strokeDashoffset = L;
+      const maskL = door.mask.map(p => { const l = p.getTotalLength(); dash(p, l, false); return l; });
+      const wordL = door.words.map(p => { const l = p.getTotalLength(); dash(p, l, false); return l; });
+      gsap.set(door.stars, { opacity: 0, scale: 0, transformOrigin: '50% 50%', transformBox: 'fill-box' });
+      gsap.set(sides(), { opacity: 0 });
+      const tagline = $('.hero-tagline svg.art'), insta = $('#heroInsta svg.art'), tadaIr = $('.order-link svg.art');
+      [tagline, insta, tadaIr].forEach(s => s && prepDraw(s));
+      let done = false, tl = null;
+      const finish = () => {
         if (done) return; done = true;
-        removeEventListener('click', onTouch, true); removeEventListener('keydown', onTouch, true);
-        if (SND.enabled()) sfx.gateOpen();
-        document.documentElement.style.overflow = lockWas;
-        g.classList.remove('is-waiting'); g.removeAttribute('role'); g.removeAttribute('tabindex');
-        if (!reduce) spawn(null, innerWidth / 2, $('.ld-gate-star', g).getBoundingClientRect().top + 15, true, 12, { radial: true, speed: 70, spread: 4, life: 0.9, rise: 0 });
-        gsap.to(g, { opacity: 0, duration: 0.6, delay: 0.15, ease: 'power2.inOut', onComplete: () => g.remove() });
-        setTimeout(resolve, 300);
+        try { sessionStorage.setItem('tada.door', '1'); } catch {}
+        removeEventListener('wheel', skip); removeEventListener('touchstart', skip); removeEventListener('keydown', skip);
+        document.documentElement.style.overflow = '';
+        resolve();
       };
-      // the touch that opens: it also wakes the sound, inside the same gesture
-      function onTouch(e) {
-        if (e.type === 'keydown' && (e.metaKey || e.ctrlKey || e.altKey || e.key === 'Tab' || e.key === 'Shift')) return;
-        SND.unlock(); heard = true;
-        if (waiting) { e.preventDefault(); open(); }
-      }
-      addEventListener('click', onTouch, true); addEventListener('keydown', onTouch, true);
-      const ready = () => {
-        if (heard || !SND.enabled()) { open(); return; }
-        waiting = true;
-        const text = T().gate.tap;
-        g.setAttribute('role', 'button'); g.tabIndex = 0; g.setAttribute('aria-label', text);
-        gsap.to(barBox, { opacity: 0, scaleX: 0.6, duration: 0.6, ease: 'power2.inOut' });
-        gsap.to(label, { opacity: 0, duration: 0.3, ease: 'power1.in', onComplete: () => {
-          label.textContent = text; g.classList.add('is-waiting');
-          gsap.fromTo(label, { opacity: 0 }, { opacity: 0.92, duration: 0.7, ease: 'power1.out', clearProps: 'opacity' });
-        } });
-        g.focus({ preventScroll: true });
-      };
-      const t0 = performance.now();
-      let target = 0;
-      preload(f => { if (f > target) { target = f; gsap.to(shown, { v: target * 0.94, duration: 0.45, ease: 'power2.out', overwrite: true, onUpdate: render }); } })
-        .then(() => {
-          const wait = Math.max(0, 500 - (performance.now() - t0)) / 1000;   // never a flash
-          gsap.to(shown, { v: 1, duration: 0.4, delay: wait, ease: 'power2.inOut', overwrite: true, onUpdate: render, onComplete: () => setTimeout(ready, 120) });
-        });
+      const skip = () => { if (tl) tl.progress(1); };
+      const quick = !firstVisit;
+      const k = quick ? 0.42 : 1;
+      // the arch: it follows the loading, and never rushes
+      const shown = { v: 0 };
+      const archAt = v => { door.arch.style.strokeDashoffset = L * (1 - v); };
+      const minArch = 1.9 * k;
+      const archTw = gsap.to(shown, { v: 0.9, duration: minArch, ease: 'power1.inOut', onUpdate: () => archAt(shown.v) });
+      sfx.introDraw && sound0('introDraw');
+      document.documentElement.style.overflow = 'hidden';
+      Promise.all([preload(() => {}), new Promise(r => setTimeout(r, minArch * 1000))]).then(() => {
+        archTw.kill();
+        tl = gsap.timeline({ onComplete: finish });
+        tl.to(shown, { v: 1, duration: 0.45 * k, ease: 'power2.out', onUpdate: () => archAt(shown.v) });
+        // the hand writes itself along its own line
+        const handDur = 2.1 * k, total = maskL.reduce((a, b) => a + b, 0);
+        let t = 0.1;
+        door.mask.forEach((p, i) => { const d = Math.max(0.12, handDur * maskL[i] / total); tl.to(p, { strokeDashoffset: 0, duration: d, ease: 'power1.inOut', onStart: () => sound0('pen') }, i ? '>-0.04' : '>0.05'); t += d; });
+        // snap: the three sparkles
+        tl.add(() => { sound0('snap'); burstAt(door.low, 10); }, '+=0.05');
+        tl.to(door.stars, { opacity: 1, scale: 1, duration: 0.55, stagger: 0.09, ease: 'back.out(2.6)' }, '<');
+        // the wordmarks
+        tl.to(door.words, { strokeDashoffset: 0, duration: 0.5 * k, stagger: 0.06 * k, ease: 'power1.inOut' }, '+=0.15');
+        tl.add(() => sound0('land'));
+        tl.add(() => { drawArt(tagline, { dur: 1.6 }); }, '-=0.2');
+        tl.to(sides(), { opacity: 1, duration: 1.1 * (quick ? 0.7 : 1), stagger: 0.12, ease: 'power2.out' }, '<');
+        tl.add(() => { drawArt(insta, { dur: 1.2 }); drawArt(tadaIr, { dur: 1.2 }); }, '<0.3');
+        tl.to('.hero-cue', { opacity: 0.85, duration: 1 }, '<0.4');
+        addEventListener('wheel', skip, { passive: true }); addEventListener('touchstart', skip, { passive: true }); addEventListener('keydown', skip);
+      });
     });
   }
+  function sound0(name) { if (!reduce && sfx[name]) sfx[name](); }
+  function burstAt(pathEl, n) {
+    if (reduce) return;
+    const b = pathEl.getBBox(), m = pathEl.getScreenCTM(); if (!m) return;
+    const x = m.a * (b.x + b.width / 2) + m.e, y = m.d * (b.y + b.height / 2) + m.f;
+    spawn(null, x, y, true, n, { radial: true, speed: 46, spread: 3, life: 0.9, rise: 2, keep: false });
+  }
+  function showDoorNow() {
+    door.arch.style.strokeDasharray = ''; door.arch.style.strokeDashoffset = '';
+    door.mask.forEach(p => { p.style.strokeDasharray = ''; p.style.strokeDashoffset = ''; });
+    door.words.forEach(p => { p.style.strokeDasharray = ''; p.style.strokeDashoffset = ''; });
+  }
 
-  const loaderEl = $('#loader');
-  const firstVisit = shouldPlayLoader();
-  if (firstVisit) { navMark.style.opacity = 0; heroWord.style.opacity = 0; }
-  else { navMark.replaceChildren(buildHandSvg().svg); heroWord.replaceChildren(buildWordmarkSvg().svg); }
-  entrance().then(() => {
-    if (firstVisit) {
-      playLoader(loaderEl, {
-        gsap, navMark, wordSlot: heroWord, sfx,
-        onLanded: () => { navMark.style.opacity = 1; heroWord.style.opacity = 1; },
-        onDone: () => startSite(),
-      });
-    } else {
-      startSite();
-      gsap.to(loaderEl, { opacity: 0, duration: 0.6, ease: 'power2.out', onComplete: () => { loaderEl.classList.add('is-done'); loaderEl.setAttribute('aria-hidden', 'true'); } });
-    }
-  });
-
-  // ---------- language toggle, resize ----------
-  async function rebuild() {
-    if (!started) return;
+  // ======================================================================
+  // Start
+  // ======================================================================
+  function prepWaiting() {
+    // everything the line will wake starts unseen
+    $$('main svg.art').forEach(s => { if (!s.closest('#hero')) prepDraw(s); });
+    $$('.tt-h svg.tt').forEach(s => { if (!s.closest('.tt-h').__drawn) prepDraw(s); });
+  }
+  function startSite() {
+    siteReady = true; started = true;
+    setupLenis();
+    quiet = true;
     buildRoute();
     ScrollTrigger.refresh();
+    quiet = false;
+    if (reduce) {
+      gsap.set('.hero-cue', { opacity: 0.85 });
+      // nothing waits for the line: every part is whole and still
+      $$('svg.art, svg.tt').forEach(s => drawArt(s, { instant: true }));
+      $$('.tt-h').forEach(h => (h.__drawn = true));
+      chains.forEach(c => draw(c, 1));
+    }
   }
-  // a layout that changes after it was measured (late fonts, a browser's text size, an
-  // image) rebuilds the route, so the line always runs where things really are
+
+  buildDoor();
+  fillSlots();
+  applyLang();
+  frameAll();
+  fitAll();
+  if (reduce) {
+    showDoorNow();
+    $$('svg.art, svg.tt').forEach(s => drawArt(s, { instant: true }));
+    startSite();
+  } else {
+    prepWaiting();
+    enterDoor().then(startSite);
+  }
+
+  // ---------- language, resize ----------
+  async function rebuild() {
+    if (!started) return;
+    quiet = true;
+    fitAll();
+    buildRoute();
+    ScrollTrigger.refresh();
+    quiet = false;
+  }
+  $$('.lang-toggle').forEach(b => b.addEventListener('click', async () => {
+    const wasOpen = !mm.hidden;
+    lang = lang === 'fa' ? 'en' : 'fa';
+    try { localStorage.setItem('tada.lang', lang); } catch {}
+    killRoute();
+    const drawnHeads = new Set($$('.tt-h').filter(h => h.__drawn).map(h => h.dataset.tt));
+    applyLang();
+    $$('.tt-h').forEach(h => { if (drawnHeads.has(h.dataset.tt)) { h.__drawn = true; const s = $('svg.tt', h); if (s) drawArt(s, { instant: true }); } else { const s = $('svg.tt', h); if (s) prepDraw(s); } });
+    $$('#menuTrack svg.art, #menuTrack svg.tt, #steps svg.art').forEach(s => prepDraw(s));
+    if (wasOpen) closeMenu();
+    await document.fonts.ready;
+    rebuild();
+  }));
   if ('ResizeObserver' in window) {
     const seen = new Map();
     const ro = new ResizeObserver(entries => {
@@ -1878,20 +1149,12 @@
       }
       if (moved && started) { clearTimeout(rz); rz = setTimeout(rebuild, 260); }
     });
-    ['#heroWord', '#story .story-text', '#menu .menu-head', '#branchRows', '#collab .container', '#footer .container'].forEach(s => { const n = $(s); if (n) ro.observe(n); });
+    ['#morning .container', '#bar .container', '#menu .menu-head', '#evening .container', '#branches .container', '#order .container', '#collab .container', '#muralFrame'].forEach(s => { const n = $(s); if (n) ro.observe(n); });
   }
-  $('#langToggle').addEventListener('click', async () => {
-    lang = lang === 'fa' ? 'en' : 'fa';
-    try { localStorage.setItem('tada.lang', lang); } catch {}
-    killRoute();
-    applyLang();
-    await document.fonts.ready;
-    rebuild();
-  });
   let rz, lastW = innerWidth;
   addEventListener('resize', () => {
-    sizeDust();
-    if (Math.abs(innerWidth - lastW) < 2 && small()) return;   // mobile URL-bar resizes: ignore
+    sizeDust(); fitAll();
+    if (Math.abs(innerWidth - lastW) < 2 && !fine) return;   // phones: the address bar comes and goes
     lastW = innerWidth;
     clearTimeout(rz); rz = setTimeout(rebuild, 220);
   });

@@ -2,179 +2,234 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>تادا لانژ</title>
-<meta name="description" content="تادا لانژ: قهوه‌ی تخصصی، ماچا، اوبه، بیکری و کوکی. سه شعبه، یک بشکن.">
-<meta name="theme-color" content="#35084C">
-<!-- preview build: keep search engines out. Remove this line when the site goes live on tada.ir. -->
+<meta name="description" content="تادا لانژ، نُت جادویی طعم: قهوه‌ی تخصصی، ماچا، اوبه، بیکری و کوکی. سه شعبه، صبح ۹ تا ۱۶ و عصر ۱۷ تا ۲۳.">
+<meta name="theme-color" content="#1C0727">
+<!-- preview build: keep search engines out. Remove these two lines when the site goes live on tada.ir. -->
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="googlebot" content="noindex, nofollow, noarchive">
 <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
-<!-- link previews (Telegram, WhatsApp, Instagram DMs). Crawlers need an absolute image
-     address: change https://tada.ir/ below if the site is hosted somewhere else. -->
+<!-- link previews (Telegram, WhatsApp, Instagram DMs): crawlers need an absolute image address -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TADA Lounge">
 <meta property="og:locale" content="fa_IR">
-<meta property="og:title" content="تادا لانژ · TADA Lounge">
-<meta property="og:description" content="قهوه‌ی تخصصی، ماچا، اوبه، بیکری و کوکی. سه شعبه، یک بشکن.">
+<meta property="og:title" content="تادا لانژ · نُت جادویی طعم">
+<meta property="og:description" content="قهوه‌ی تخصصی، ماچا، اوبه، بیکری و کوکی. سه شعبه، صبح ۹ تا ۱۶ و عصر ۱۷ تا ۲۳.">
 <meta property="og:image" content="https://tada.ir/assets/brand/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<!-- the entrance shows Peyda at once -->
-<link rel="preload" href="assets/fonts/peyda-300.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/peyda-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/peyda-500.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="css/site.css?v=20261109161717">
-<link rel="stylesheet" href="css/loader.css?v=20261109161717">
+<link rel="preload" href="assets/fonts/doran-vf.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/site.css?v=20261109183447">
 </head>
 <body>
-<a class="skip-link" href="#story" data-t="skipTo">پرش به محتوا</a>
+<a class="skip-link" href="#morning" data-t="skipTo">پرش به محتوا</a>
 
-<!-- Loader: the hand draws itself, writes the logotype, snaps; the lowest sparkle
-     opens the page. Removed once done; skipped on return visits in the same session. -->
-<div class="loader" id="loader" role="status" aria-label="در حال بارگذاری" data-surface="dark">
-  <div class="ld-bg"></div>
-  <div class="ld-stage"></div>
-  <div class="ld-word"></div>
-  <!-- The entrance: everything loads first, then one tap lets the sound in. Browsers
-       allow no audio before a gesture, so this tap is what lets the intro be heard. -->
-  <div class="ld-gate" id="ldGate">
-    <div class="ld-gate-star" aria-hidden="true"></div>
-    <div class="ld-gate-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="ldGateLabel"><i></i><b aria-hidden="true"></b></div>
-    <p class="ld-gate-label" id="ldGateLabel" data-t="gate.loading">در حال آماده‌سازی…</p>
-  </div>
-  <button class="ld-sound sound-toggle glass" type="button" aria-pressed="true" data-sfx="none">صدا: روشن</button>
-  <button class="ld-skip glass" type="button" data-t="skip">رد کردن</button>
-</div>
-
-<header class="nav" id="nav" data-ink="light">
+<header class="nav" id="nav" data-ink="night">
   <a class="nav-mark" id="navMark" href="#top" aria-label="تادا"></a>
   <nav class="nav-links" aria-label="بخش‌ها">
-    <a href="#story" data-t="nav.story">تادا</a>
-    <a href="#menu" data-t="nav.product">منو</a>
+    <a href="#morning" data-t="nav.morning">تادا</a>
+    <a href="#menu" data-t="nav.menu">منو</a>
     <a href="#branches" data-t="nav.branches">شعبه‌ها</a>
-    <a href="#collab" data-t="nav.collab">همکاری</a>
+    <a href="#order" data-t="nav.order">سفارش</a>
   </nav>
   <div class="nav-tools">
-    <button class="nav-sound sound-toggle glass" type="button" aria-pressed="true" data-sfx="none">صدا: روشن</button>
-    <button class="nav-menu-btn glass" id="menuBtn" type="button" aria-controls="mMenu" aria-expanded="false" data-t="menuBtn">فهرست</button>
-    <button class="nav-lang glass" id="langToggle" type="button" lang="en" aria-label="Switch language" data-t="langSwitch">EN</button>
+    <button class="btn btn-quiet sound-toggle" type="button" aria-pressed="true">صدا روشن</button>
+    <button class="btn btn-quiet nav-menu-btn" id="menuBtn" type="button" aria-controls="mMenu" aria-expanded="false" data-t="menuBtn">فهرست</button>
+    <button class="btn btn-quiet lang-toggle" id="langToggle" type="button" lang="en" data-t="langSwitch">EN</button>
   </div>
 </header>
 
-<!-- Phone menu: opens from the nav mark or the «فهرست» button. -->
-<div class="mmenu" id="mMenu" data-surface="dark" role="dialog" aria-modal="true" aria-labelledby="mMenuTitle" hidden>
+<!-- Phone index: opens from the nav. The page behind is inert while it is open. -->
+<div class="mmenu" id="mMenu" data-surface="night" role="dialog" aria-modal="true" aria-labelledby="mMenuTitle" hidden>
   <div class="mmenu-head">
     <p class="mmenu-title" id="mMenuTitle" data-t="menuBtn">فهرست</p>
-    <button class="mmenu-close glass" type="button" data-t="menuClose">بستن</button>
+    <button class="btn btn-quiet mmenu-close" type="button" data-t="menuClose">بستن</button>
   </div>
   <nav class="mmenu-links" aria-label="بخش‌ها">
-    <a href="#top"><span data-t="nav.top">آغاز</span></a>
-    <a href="#story"><span data-t="nav.story">تادا</span></a>
-    <a href="#menu"><span data-t="nav.product">منو</span></a>
-    <a href="#branches"><span data-t="nav.branches">شعبه‌ها</span></a>
-    <a href="#collab"><span data-t="nav.collab">همکاری</span></a>
+    <a href="#top" data-t="nav.top">آغاز</a>
+    <a href="#morning" data-t="nav.morning">تادا</a>
+    <a href="#menu" data-t="nav.menu">منو</a>
+    <a href="#branches" data-t="nav.branches">شعبه‌ها</a>
+    <a href="#order" data-t="nav.order">سفارش</a>
+    <a href="#collab" data-t="nav.collab">همکاری</a>
   </nav>
   <div class="mmenu-tools">
-    <button class="mmenu-sound sound-toggle glass" type="button" aria-pressed="true" data-sfx="none">صدا: روشن</button>
-    <button class="mmenu-lang glass" type="button" lang="en" data-t="langSwitch">EN</button>
+    <button class="btn sound-toggle" type="button" aria-pressed="true">صدا روشن</button>
+    <button class="btn lang-toggle" type="button" lang="en" data-t="langSwitch">EN</button>
   </div>
-</div>
-
-<div class="zoom" id="zoom" data-surface="dark" role="dialog" aria-modal="true" hidden>
-  <div class="zoom-veil" aria-hidden="true"></div>
-  <div class="zoom-stage" id="zoomStage"></div>
-  <button class="zoom-close glass" id="zoomClose" type="button" data-sfx="none"></button>
 </div>
 
 <main id="top">
 
-  <!-- Hero: a pinned stage for the scroll-scrubbed video (Golestan method). The video
-       is added by main.js from SITE.hero in js/content.js; until then the stage is the
-       night surface with the logotype and the overlays. -->
-  <section class="hero" id="hero" data-surface="dark">
-    <div class="hero-stage" id="heroStage">
-      <div class="hero-media" id="heroMedia" data-mode="none"></div>
-      <svg class="hero-scene" id="heroScene" viewBox="0 -170 300 600" aria-hidden="true"></svg>
-      <div class="hero-vignette" aria-hidden="true"></div>
-      <div class="hero-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-      <div class="container hero-head">
-        <h1 class="hero-word" id="heroWord" aria-label="تادا"></h1>
-        <p class="hero-line" data-t="hero.line">جایی که طعم بشکن می‌زند.</p>
+  <!-- The door: the arch from the glass, the snapping hand, the wordmarks. It draws itself
+       while the site loads; its last stroke is where the Tada magic begins. -->
+  <section class="hero" id="hero" data-surface="night">
+    <div class="hero-grid">
+      <div class="hero-side hero-words">
+        <h1 class="hero-tagline">
+          <span class="sr" data-t="hero.tagline">نُت جادویی طعم</span>
+          <span class="art-slot" data-art="tagline" data-art-lang="fa"></span>
+          <span class="en-line" data-t="hero.tagline" aria-hidden="true"></span>
+        </h1>
+        <a class="insta-link" id="heroInsta" href="https://www.instagram.com/tada_lounge/" rel="noopener">
+          <span class="sr" data-t="hero.insta">تادا در اینستاگرام</span>
+          <span class="art-slot" data-art="insta"></span>
+        </a>
       </div>
-      <div class="container hero-overlays" id="heroCaptions"></div>
-      <p class="hero-cue" data-t="hero.cue">اسکرول کنید</p>
-      <svg class="ink" data-ink="hero" aria-hidden="true"></svg>
+      <div class="hero-door">
+        <div class="door" id="door" role="img" aria-label="تادا، TADA">
+          <div class="door-film" id="doorFilm" hidden></div>
+        </div>
+        <div class="sill" aria-hidden="true">
+          <span class="art-slot" data-art="lozenge"></span>
+          <span class="art-slot" data-art="dotRow"></span>
+        </div>
+      </div>
+      <div class="hero-side hero-hours">
+        <div class="hours-card">
+          <p class="hours-title"><i class="star" aria-hidden="true"></i><span data-t="hero.hoursTitle">ساعت کاری</span></p>
+          <p class="hours-row"><span data-t="hero.morning">صبح ۹ تا ۱۶</span></p>
+          <p class="hours-row"><span data-t="hero.evening">عصر ۱۷ تا ۲۳</span></p>
+          <p class="status" id="openStatus" aria-live="polite"></p>
+          <a class="order-link" href="https://tada.ir" rel="noopener">
+            <span class="order-label"><i class="star" aria-hidden="true"></i><span data-t="hero.order">سفارش آنلاین از وبسایت</span></span>
+            <span class="art-slot" data-art="tadaIr" role="img" aria-label="tada.ir"></span>
+          </a>
+        </div>
+      </div>
     </div>
+    <p class="hero-cue" data-t="hero.cue" aria-hidden="true">بفرمایید تو</p>
+    <div class="loading" id="loading" role="status">
+      <span class="sr" data-t="loading">در حال آماده‌سازی</span>
+    </div>
+    <svg class="ink" data-ink="hero" aria-hidden="true"></svg>
   </section>
 
-  <section class="story section" id="story" data-surface="light">
-    <div class="dusk" aria-hidden="true"></div>
-    <div class="container story-grid">
-      <div class="story-lattice" id="storyLattice" aria-hidden="true"></div>
-      <div class="story-text">
-        <h2 class="h2" data-t="story.title">تادا یعنی همان لحظه.</h2>
-        <p class="lead" data-t="story.lead"></p>
-        <p class="body" data-t="story.body"></p>
+  <!-- Morning: the day comes up through the brand's purples. -->
+  <section class="chapter morning" id="morning" data-surface="day">
+    <div class="sky sky-dawn" aria-hidden="true"></div>
+    <div class="container split">
+      <div class="text">
+        <h2 class="tt-h" data-tt="morning.title"></h2>
+        <p class="lead" data-t="morning.lead"></p>
+        <p class="body" data-t="morning.body"></p>
+      </div>
+      <div class="art-col art-morning">
+        <span class="art-slot art-sun" data-art="sun"></span>
+        <span class="art-slot art-kettle" data-art="kettle"></span>
       </div>
     </div>
-    <svg class="ink" data-ink="story" aria-hidden="true"></svg>
+    <svg class="ink" data-ink="morning" aria-hidden="true"></svg>
   </section>
 
-  <!-- Menu: pinned; the labels slide sideways while the Tada magic draws the shelf. -->
-  <section class="menu" id="menu" data-surface="paper">
-    <div class="container menu-head">
-      <h2 class="h2" data-t="menu.title"></h2>
-      <p class="lead" data-t="menu.lead"></p>
-      <div class="menu-nav" id="menuNav">
-        <div class="menu-dots" id="menuDots" aria-hidden="true"></div>
+  <section class="chapter bar" id="bar" data-surface="day">
+    <div class="container split">
+      <div class="text">
+        <h2 class="tt-h" data-tt="bar.title"></h2>
+        <p class="lead" data-t="bar.lead"></p>
+        <div class="pack" id="pack"></div>
+      </div>
+      <div class="art-col art-bar">
+        <span class="art-slot art-path" data-art="coffeePath"></span>
+        <span class="art-slot art-espresso" data-art="espresso"></span>
       </div>
     </div>
-    <div class="menu-stage" id="menuStage">
-      <div class="menu-track" id="menuTrack">
-        <svg class="ink ink-track" data-ink="menu-track" aria-hidden="true"></svg>
+    <svg class="ink" data-ink="bar" aria-hidden="true"></svg>
+  </section>
+
+  <!-- The menu: pinned. The flavors pass one at a time; each has its note. -->
+  <section class="menu" id="menu" data-surface="day" aria-roledescription="carousel">
+    <div class="menu-inner">
+      <div class="container menu-head">
+        <h2 class="tt-h" data-tt="menu.title"></h2>
+        <p class="lead" data-t="menu.lead"></p>
       </div>
+      <div class="menu-stage" id="menuStage">
+        <ol class="menu-track" id="menuTrack"></ol>
+      </div>
+      <div class="menu-dots" id="menuDots" aria-hidden="true"></div>
     </div>
     <svg class="ink" data-ink="menu" aria-hidden="true"></svg>
   </section>
 
-  <section class="branches section" id="branches" data-surface="light">
+  <!-- Evening: the day goes down into the night of the glass. -->
+  <section class="chapter evening" id="evening" data-surface="night">
+    <div class="sky sky-dusk" aria-hidden="true"></div>
+    <div class="container split mirror">
+      <div class="text">
+        <h2 class="tt-h" data-tt="evening.title"></h2>
+        <p class="lead" data-t="evening.lead"></p>
+        <p class="body" data-t="evening.body"></p>
+      </div>
+      <div class="art-col art-evening">
+        <span class="art-slot art-hat" data-art="hat"></span>
+      </div>
+    </div>
+    <svg class="ink" data-ink="evening" aria-hidden="true"></svg>
+  </section>
+
+  <section class="chapter branches" id="branches" data-surface="night">
     <div class="container">
-      <h2 class="h2" data-t="branches.title"></h2>
-      <p class="lead" data-t="branches.lead"></p>
-      <ol class="rows" id="branchRows"></ol>
-      <p class="small soft hours" id="branchHours"></p>
+      <div class="text narrow">
+        <h2 class="tt-h" data-tt="branches.title"></h2>
+        <p class="lead" data-t="branches.lead"></p>
+      </div>
+      <ol class="steps" id="steps"></ol>
+      <p class="small soft steps-hours" data-t="branches.hours"></p>
     </div>
     <svg class="ink" data-ink="branches" aria-hidden="true"></svg>
   </section>
 
-  <section class="collab section" id="collab" data-surface="light">
-    <div class="container collab-col">
-      <h2 class="h2" data-t="collab.title"></h2>
-      <dl class="notes" id="collabItems"></dl>
-      <p class="body"><a class="glass" id="collabLink" href="https://www.instagram.com/tada_lounge/" rel="noopener" data-t="collab.cta"></a> <span class="soft" lang="en" dir="ltr">@tada_lounge</span></p>
+  <section class="chapter order" id="order" data-surface="night">
+    <div class="container">
+      <div class="text narrow">
+        <h2 class="tt-h" data-tt="order.title"></h2>
+        <p class="lead" data-t="order.lead"></p>
+        <p><a class="btn btn-line" href="https://tada.ir" rel="noopener" data-t="order.cta">سفارش در tada.ir</a></p>
+      </div>
+      <div class="road" id="road" aria-hidden="true">
+        <span class="art-slot art-palm" data-art="palm"></span>
+        <span class="art-slot art-scooter" data-art="scooter"></span>
+      </div>
+    </div>
+    <svg class="ink" data-ink="order" aria-hidden="true"></svg>
+  </section>
+
+  <section class="chapter collab" id="collab" data-surface="night">
+    <div class="container">
+      <div class="text narrow">
+        <h2 class="tt-h" data-tt="collab.title"></h2>
+        <dl class="notes" id="collabItems"></dl>
+        <p><a class="btn btn-line" href="https://www.instagram.com/tada_lounge/" rel="noopener" data-t="collab.cta">پیام در اینستاگرام</a></p>
+      </div>
     </div>
     <svg class="ink" data-ink="collab" aria-hidden="true"></svg>
   </section>
 
 </main>
 
-<footer class="footer" id="footer" data-surface="light">
-  <div class="container footer-col">
-    <div class="footer-hand" id="footerHand" role="img" aria-label="نشان تادا"></div>
-    <div class="footer-lockup" id="footerLockup" aria-hidden="true"></div>
+<!-- The ending: step back outside and see the whole glass. -->
+<footer class="glass" id="glass" data-surface="night">
+  <figure class="mural" id="mural">
+    <div class="mural-frame" id="muralFrame">
+      <img class="mural-img" id="muralImg" src="assets/art/mural.svg" alt="" decoding="async" loading="lazy" width="8022" height="5754">
+    </div>
+    <figcaption class="mural-caption" data-t="glass.caption">شیشه‌ی تادا، از بیرون</figcaption>
+  </figure>
+  <div class="container footer-row">
     <ul class="footer-links" id="footerLinks"></ul>
-    <p class="small soft"><span id="year"></span> <span data-t="footer.rights"></span></p>
+    <p class="small soft"><span id="year"></span> <span data-t="glass.rights">تادا لانژ</span></p>
   </div>
-  <svg class="ink" data-ink="footer" aria-hidden="true"></svg>
+  <svg class="ink" data-ink="glass" aria-hidden="true"></svg>
 </footer>
 
 <!-- The Tada magic: the glowing head of the line, and its sparkles. -->
 <canvas class="magic-dust" id="magicDust" aria-hidden="true"></canvas>
 <div class="magic" id="magic" aria-hidden="true"></div>
-<div class="grain" aria-hidden="true"></div>
+<div class="aura" id="aura" aria-hidden="true"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>window.gsap || document.write('<script src="assets/vendor/gsap.min.js"><\/script>')</script>
@@ -182,10 +237,11 @@
 <script>window.ScrollTrigger || document.write('<script src="assets/vendor/ScrollTrigger.min.js"><\/script>')</script>
 <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
 <script>window.Lenis || document.write('<script src="assets/vendor/lenis.min.js"><\/script>')</script>
-<script src="js/brand-data.js?v=20261109161717"></script>
-<script src="js/content.js?v=20261109161717"></script>
-<script src="js/loader.js?v=20261109161717"></script>
-<script src="js/sound.js?v=20261109161717"></script>
-<script src="js/main.js?v=20261109161717"></script>
+<script src="js/letters-data.js?v=20261109183447"></script>
+<script src="js/letters.js?v=20261109183447"></script>
+<script src="js/art-data.js?v=20261109183447"></script>
+<script src="js/content.js?v=20261109183447"></script>
+<script src="js/sound.js?v=20261109183447"></script>
+<script src="js/main.js?v=20261109183447"></script>
 </body>
 </html>

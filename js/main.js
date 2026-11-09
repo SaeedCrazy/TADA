@@ -414,7 +414,7 @@
     });
     lab.addEventListener('pointerleave', () => { rx(0); ry(0); lab.classList.remove('is-hover'); });
   }
-  const restShadow = '0 22px 50px -32px rgba(53, 8, 76, .38), 0 0 0 1px rgba(102, 36, 130, .12)';
+  const restShadow = '0 22px 50px -32px rgba(53, 8, 76, .38), 0 6px 18px -12px rgba(53, 8, 76, .12)';
   function frameLabel(lab, on) {
     const rect = $('.label-frame rect', lab), corners = $$('.label-corner', lab), sheen = $('.label-sheen', lab);
     if (!rect) return;
@@ -423,7 +423,7 @@
     if (reduce) { gsap.set(rect, { strokeDashoffset: on ? 0 : 1 }); gsap.set(corners, { scale: on ? 1 : 0, opacity: on ? 1 : 0 }); return; }
     const tl = lab.__ftl = gsap.timeline();
     // slow and calm: the frame draws, the label lifts with a sweep of light, settles
-    const lift = fine ? { y: -12, scale: 1.025, boxShadow: '0 48px 90px -34px rgba(53, 8, 76, .5), 0 0 0 1px rgba(102, 36, 130, .2)' } : { y: -8, scale: 1.02 };
+    const lift = fine ? { y: -12, scale: 1.025, boxShadow: '0 48px 90px -34px rgba(53, 8, 76, .5), 0 8px 22px -12px rgba(53, 8, 76, .16)' } : { y: -8, scale: 1.02 };
     const rest = fine ? { y: 0, scale: 1, boxShadow: restShadow } : { y: 0, scale: 1 };
     if (on) {
       tl.to(rect, { strokeDashoffset: 0, duration: 1.9, ease: 'power2.inOut' }, 0)
@@ -449,7 +449,10 @@
   const $menu = $('#menu');
   function checkLabels() {
     const hr = $menu.getBoundingClientRect(), H = innerHeight;
-    if (hr.bottom < 0 || hr.top > H) return;
+    if (hr.bottom < 0 || hr.top > H) {   // off screen: a frame only goes when the line has gone back past it
+      for (const lab of $$('#menuTrack .label.is-framed')) if (lab.__shown && !lab.__want) { lab.__shown = false; frameLabel(lab, false); }
+      return;
+    }
     const labs = $$('#menuTrack .label'); if (!labs.length) return;
     const cx = document.documentElement.clientWidth / 2;
     let best = 0, bd = Infinity;
@@ -457,10 +460,10 @@
     if (best !== menuActive) { menuActive = best; setDot(best); paintArrows(labs); }
     labs.forEach((lab, i) => {
       const r = rs[i], d = Math.abs((r.left + r.right) / 2 - cx);
-      const upright = r.top >= -2 && r.bottom <= H + 2;
+      const upright = r.bottom <= H + 2 && r.bottom > 0;   // fully risen into view (it may already be leaving at the top)
       const arrive = i === best && d < Math.max(24, r.width * 0.06);          // at rest in the middle
       const stay = !!lab.__shown && i === best && d < r.width * 0.3;          // and it stays until it leaves
-      const on = !!lab.__want && upright && (arrive || stay);
+      const on = !!lab.__want && ((upright && arrive) || stay);   // it stays dressed as the page moves on
       if (on === !!lab.__shown) return;
       lab.__shown = on;
       frameLabel(lab, on);
@@ -899,15 +902,16 @@
       const sp = screenPoint(fr.at.el, fr.at.len);
       headState.x = sp.x; headState.y = sp.y;
       magic.style.transform = `translate3d(${sp.x}px, ${sp.y}px, 0)`;
-      magic.classList.toggle('on-dark', !!fr.chain.dark);
+      const dk = !!fr.chain.dark || (fr.chain.dusk > 0 && sp.ly < fr.chain.dusk);
+      magic.classList.toggle('on-dark', dk);
       if (!headState.shown) { headState.shown = true; gsap.to(magic, { opacity: 1, duration: 0.6, ease: 'power2.out' }); }
       // shed sparkles where the pen has travelled (measured along the path, not the screen)
       if (headState.lastEl === fr.at.el && headState.lastLX != null) {
         const d = Math.hypot(sp.lx - headState.lastLX, sp.ly - headState.lastLY) * sp.s;
-        if (d > 7) { spawn(fr.at.el, sp.lx, sp.ly, fr.chain.dark, d > 30 ? 2 : 1, HUG); headState.lastLX = sp.lx; headState.lastLY = sp.ly; }
+        if (d > 7) { spawn(fr.at.el, sp.lx, sp.ly, dk, d > 30 ? 2 : 1, HUG); headState.lastLX = sp.lx; headState.lastLY = sp.ly; }
       } else { headState.lastEl = fr.at.el; headState.lastLX = sp.lx; headState.lastLY = sp.ly; }
       headState.idle += dt;
-      if (headState.idle > 0.55) { headState.idle = 0; spawn(fr.at.el, sp.lx, sp.ly, fr.chain.dark, 1, HUG); }
+      if (headState.idle > 0.55) { headState.idle = 0; spawn(fr.at.el, sp.lx, sp.ly, dk, 1, HUG); }
     }
     // particles
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -964,6 +968,7 @@
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     svg.replaceChildren();
   }
+  const duskH = () => { const d = $('#story .dusk'); return d ? d.offsetHeight : 0; };
   const rel = (r, o) => ({ x: r.left - o.left, y: r.top - o.top, w: r.width, h: r.height, r: r.right - o.left, b: r.bottom - o.top });
 
   function addChain(name, host, pen, extra = {}) {
@@ -1103,6 +1108,12 @@
       lat.style.setProperty('--lat-w', `${Math.max(40, latW - inside)}px`);
       lat.style.setProperty('--lat-h', `${latH}px`);
       const hr = host.getBoundingClientRect(); sizeSvg(svg, hr.width, hr.height);
+      const dH = duskH();
+      svg.classList.toggle('has-dusk', dH > 0);
+      if (dH > 0) {
+        const g = el('linearGradient', { id: 'inkDusk', gradientUnits: 'userSpaceOnUse', x1: 0, y1: 0, x2: 0, y2: dH }, el('defs', {}, svg));
+        [[0, '#EFE9F2'], [0.42, '#E6D9EA'], [0.66, '#662482'], [1, '#662482']].forEach(([o, c]) => el('stop', { offset: o, 'stop-color': c }, g));
+      }
       const lr = rel(lat.getBoundingClientRect(), hr);
       const y0 = lr.y + rr;                           // row 0 centre line
       setGrid(2 * rr, xs + rr, y0);                   // the faint sheet everywhere takes this lattice's grid
@@ -1110,7 +1121,7 @@
       pen.line(y0);
       pen.lattice(rows, n, rr, (latH * 1.7 + 160) * 3.4);   // slow and calm: the pattern takes its time
       runWithBeads(pen, hr.height, [0.55]);
-      addChain('story', host, pen);
+      addChain('story', host, pen, { dusk: dH * 0.5 });
     }
 
     // ---------------- menu: pinned; the magic stays put and draws the shelf ----------------
@@ -1185,24 +1196,37 @@
       c.travel = menuTravel;
     }
 
-    // ---------------- branches: boustrophedon from the far side ----------------
+    // ---------------- branches: a route with a station at each branch ----------------
+    // No rules across the page: the line runs down beside the routes, a kit star at each
+    // branch (the branch glows as the pen reaches it), then crosses to the other side in
+    // one long, soft sweep that flows on into the next part.
     {
       const host = $('#branches'), svg = $('.ink[data-ink="branches"]');
-      const hr = host.getBoundingClientRect(); sizeSvg(svg, hr.width, hr.height);
-      const rows = $$('#branchRows li').map(li => rel(li.getBoundingClientRect(), hr));
+      host.style.paddingBottom = '';
+      let hr = host.getBoundingClientRect();
+      const lis = $$('#branchRows li');
+      // the sweep stays a slow diagonal, never a flat rule: on wide screens it gets room
+      const lastB = lis.length ? rel(lis[lis.length - 1].getBoundingClientRect(), hr).b : hr.height * 0.6;
+      const want = Math.abs(xf - xs) * 0.3 + 40, room = hr.height - lastB;
+      if (room < want) { host.style.paddingBottom = `calc(var(--section-gap) + ${Math.ceil(want - room)}px)`; hr = host.getBoundingClientRect(); }
+      sizeSvg(svg, hr.width, hr.height);
       const pen = makePen(svg, xf, 0, 'S', sgn);
-      let onFar = true;
       const r = beadR();
-      rows.forEach(row => {
-        const y = row.b - 6;
-        pen.to(y - R0);
-        pen.turn(onFar ? 'B' : 'F');
-        const span = Math.abs(xf - xs) - 2 * R0, half = (span - 2 * r) / 2;
-        pen.line(half).bead().line(half);
-        pen.turn('S');
-        onFar = !onFar;
+      lis.forEach((li, i) => {
+        const row = rel(li.getBoundingClientRect(), hr);
+        pen.to(row.y + row.h / 2 - r);
+        pen.bead();
+        const station = pen.links[pen.links.length - 1];
+        let reached = false;
+        station.onProgress = f => {
+          const on = f >= 0.5;
+          if (on === reached) return;
+          reached = on; li.classList.toggle('is-reached', on);
+          if (on && siteReady) sfx.tile(i + 2);
+        };
       });
-      pen.to(hr.height);
+      const y0 = pen.y, y1 = hr.height, k = (y1 - y0) * 0.62;
+      pen.cubic([xf, y0 + k], [xs, y1 - k], [xs, y1], undefined, 'S');
       addChain('branches', host, pen);
     }
 
@@ -1279,7 +1303,7 @@
     lineTrigger(chains[5], { start: 'top 60%', end: () => ScrollTrigger.maxScroll(window) - (small() ? 140 : 8) });
 
     // the nav takes the ink of the surface under it
-    triggers.push(gsap.to({}, { scrollTrigger: { trigger: '#story', start: 'top 48px', onEnter: () => ($('#nav').dataset.ink = 'dark'), onLeaveBack: () => ($('#nav').dataset.ink = 'light') } }));
+    triggers.push(gsap.to({}, { scrollTrigger: { trigger: '#story', start: () => `top+=${Math.round(duskH() * 0.55)} 48px`, invalidateOnRefresh: true, onEnter: () => ($('#nav').dataset.ink = 'dark'), onLeaveBack: () => ($('#nav').dataset.ink = 'light') } }));
 
     if (reduce) chains.forEach(c => { c.raw = 1; draw(c, 1); });
     else chains.forEach(c => { c.raw = 0; draw(c, 0); });
@@ -1430,9 +1454,13 @@
   const RANGES = [[0.12, 0.33], [0.35, 0.58], [0.60, 0.83], [0.85, 1.01]];   // each holds until just before the next
   let capShown = -1;
   const heroCue = $('.hero-cue');
+  const heroEdge = [$('.hero-frame'), $('.hero-vignette')];
   function heroUpdate(p) {
     if (heroVideo) heroVideo(p);
     if (heroCue) heroCue.style.opacity = Math.max(0, 1 - p / 0.06).toFixed(3);
+    const melt = reduce ? 0 : Math.min(1, Math.max(0, (p - 0.88) / 0.12)), keep = (1 - melt).toFixed(3);
+    if (heroEdge[0]) heroEdge[0].style.opacity = keep;
+    if (heroEdge[1]) heroEdge[1].style.opacity = keep;
     if (scene && $('#heroMedia').dataset.mode !== 'video') scene.progress(p);
     const caps = $$('#heroCaptions .hero-cap');
     let active = -1;

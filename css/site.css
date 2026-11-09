@@ -296,9 +296,9 @@ html[lang="en"] .mmenu-lang { font-family: var(--font-fa); }
 .label[data-tone="ube"]    { --l-bg: var(--ube-lilac);    --l-fg: var(--white);       --l-soft: #FFFFFF; --l-edge: rgba(255,255,255,.5); --l-tile: #FFFFFF; }
 .label[data-tone="matcha"] { --l-bg: var(--matcha);       --l-fg: var(--white);       --l-soft: #FFFFFF; --l-edge: rgba(255,255,255,.5); --l-tile: #FFFFFF; }
 .label[data-tone="night"]  { --l-bg: var(--night-purple); --l-fg: var(--lilac-mist);  --l-soft: rgba(239,233,242,.74); --l-edge: rgba(201,179,207,.6); --l-tile: #C9B3CF; }
-.label[data-tone="paper"]  { --l-bg: var(--white);        --l-fg: var(--night-purple); --l-soft: rgba(53,8,76,.66); --l-edge: rgba(102,36,130,.35); --l-tile: #662482; box-shadow: 0 0 0 1px rgba(53,8,76,.08); }
+.label[data-tone="paper"]  { --l-bg: var(--white);        --l-fg: var(--night-purple); --l-soft: rgba(53,8,76,.66); --l-edge: rgba(102,36,130,.35); --l-tile: #662482; box-shadow: var(--float); }
 .label[data-tone="purple"] { --l-bg: var(--tada-purple);  --l-fg: var(--white);       --l-soft: rgba(255,255,255,.82); --l-edge: rgba(255,255,255,.5); --l-tile: #FFFFFF; }
-.label[data-tone="pack"]   { --l-bg: var(--white);        --l-fg: var(--night-purple); --l-soft: rgba(53,8,76,.66); --l-edge: rgba(102,36,130,.35); --l-tile: #662482; width: var(--pack-w); box-shadow: 0 0 0 1px rgba(53,8,76,.08); }
+.label[data-tone="pack"]   { --l-bg: var(--white);        --l-fg: var(--night-purple); --l-soft: rgba(53,8,76,.66); --l-edge: rgba(102,36,130,.35); --l-tile: #662482; width: var(--pack-w); box-shadow: var(--float); }
 /* white on ube or matcha is under 4.5:1 for small text, so the lower part of those
    labels, where the text sits, carries a night-purple veil (6.5:1 or better) */
 .label[data-tone="ube"], .label[data-tone="matcha"] { background: linear-gradient(to top, rgba(53, 8, 76, .32) 0%, rgba(53, 8, 76, .32) 42%, rgba(53, 8, 76, 0) 74%), var(--l-bg); }
@@ -544,3 +544,17 @@ html, body { overflow-x: hidden; }
 .zoom-close .zc-line { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
 /* the magic's sparkles show above an open overlay */
 .has-overlay .magic-dust { z-index: 95; }
+
+/* ---------- one piece ---------- */
+/* The night of the first scene melts into the page through the brand's own purples: no
+   edge where it ends, the line descends through the dusk and turns from light to purple. */
+:root { --dusk: clamp(240px, 52vh, 620px); --float: 0 28px 64px -40px rgba(53, 8, 76, .34), 0 6px 18px -12px rgba(53, 8, 76, .12); }
+@supports (height: 1svh) { :root { --dusk: clamp(240px, 52svh, 620px); } }
+.story { padding-top: calc(var(--dusk) + var(--section-gap) * .5); }
+.dusk { position: absolute; left: 0; right: 0; top: 0; height: var(--dusk); z-index: -2; pointer-events: none;
+  background: linear-gradient(180deg, #35084C 0%, #390A51 8%, #43125B 18%, #552169 29%, #6E3C82 41%, #8E679F 54%, #B096BD 67%, #CFC0D7 79%, #E4DBE8 90%, #EFE9F2 100%); }
+.ink.has-dusk .ink-link { stroke: url(#inkDusk); }
+.hero .bg-field { -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+/* a branch the pen has reached glows softly */
+.rows .row-name { transition: text-shadow 1.2s var(--ease-out); }
+.rows li.is-reached .row-name { text-shadow: 0 0 22px rgba(146, 109, 143, .5); }

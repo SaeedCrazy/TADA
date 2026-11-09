@@ -46,6 +46,7 @@
       ctx = new AudioContext();
       const comp = ctx.createDynamicsCompressor();
       comp.threshold.value = -16; comp.ratio.value = 5;
+      ctx.addEventListener('statechange', () => heardNow());
       comp.connect(ctx.destination);
       master = ctx.createGain(); master.gain.value = 0.9; master.connect(comp);
       const conv = ctx.createConvolver(); conv.buffer = impulse(ctx, 1.8, 3);
@@ -54,7 +55,7 @@
       const d = noise.getChannelData(0);
       for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     }
-    if (ctx.state === 'suspended') ctx.resume();
+    if (ctx.state === 'suspended') ctx.resume().then(heardNow, () => {});
     return ctx;
   }
 
@@ -144,6 +145,10 @@
       tone(note(PENTA[i % 5] + 12), 0.8, { gain: 0.006, attack: 0.08, delay: 0.04, reverb: true });
       sparkles(0.08, 1, 0.005);
     },
+    welcome() {
+      arp([0, 7, 12], { gap: 0.1, gain: 0.022, type: 'sine' });
+      sparkles(0.22, 3, 0.006);
+    },
     gateOpen() {
       air(1.3, { gain: 0.028, from: 500, to: 4200, reverb: true });
       arp([0, 7, 12, 19], { gap: 0.12, gain: 0.026, type: 'sine' });
@@ -158,6 +163,16 @@
     listeners.forEach(fn => fn(wanted));
   }
   const unlock = () => { gestured = true; if (wanted) engine(); };
+  // call fn once, the first moment sound can actually be heard
+  const firstSound = [];
+  function onFirstSound(fn) {
+    if (ctx && ctx.state === 'running') return;          // already heard: nothing to greet
+    firstSound.push(fn);
+  }
+  function heardNow() {
+    if (!ctx || ctx.state !== 'running' || !firstSound.length) return;
+    const fns = firstSound.splice(0); setTimeout(() => fns.forEach(f => f()), 60);
+  }
   // Ask, without a gesture, whether this browser already lets the site sound.
   function probe() {
     if (!wanted || typeof AudioContext === 'undefined') return Promise.resolve(false);
@@ -195,5 +210,5 @@
     document.addEventListener('click', unlock, { passive: true });
   }
 
-  window.TadaSound = { enabled: () => wanted, setEnabled, toggle: () => setEnabled(!wanted), unlock, probe, sfx, bind, onChange: fn => listeners.add(fn) };
+  window.TadaSound = { enabled: () => wanted, setEnabled, toggle: () => setEnabled(!wanted), unlock, probe, onFirstSound, sfx, bind, onChange: fn => listeners.add(fn) };
 })();

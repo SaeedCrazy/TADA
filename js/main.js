@@ -481,6 +481,7 @@
       const box = document.createElement('div'), sheet = document.createElement('i');
       box.className = 'bg-field'; box.setAttribute('aria-hidden', 'true');
       sheet.className = 'bg-sheet'; box.append(sheet);
+      if (sel === '#heroStage' || sel === '#menu') sheet.style.willChange = 'transform';
       let aura = null;
       if (hasAura) { aura = document.createElement('i'); aura.className = 'bg-aura'; box.append(aura); }
       host.prepend(box);
@@ -880,7 +881,7 @@
     if (reduce) return gsap.to(proxy, { p: 1, duration: 0, paused: true });
     const tw = gsap.to(proxy, {
       p: 1, ease: 'none',
-      scrollTrigger: { trigger: c.host, scrub: 1, invalidateOnRefresh: true, ...opts },
+      scrollTrigger: { trigger: c.host, scrub: fine ? 1.2 : 1.8, invalidateOnRefresh: true, ...opts },
       onUpdate: () => { c.raw = proxy.p; resolve(); },
     });
     triggers.push(tw);
@@ -961,7 +962,7 @@
       setGrid(2 * rr, xs + rr, y0);                   // the faint sheet everywhere takes this lattice's grid
       const pen = makePen(svg, xs, 0, 'S', sgn);
       pen.line(y0);
-      pen.lattice(rows, n, rr, (latH * 1.7 + 160) * 2.6);   // slow and calm: the pattern takes its time
+      pen.lattice(rows, n, rr, (latH * 1.7 + 160) * 3.4);   // slow and calm: the pattern takes its time
       runWithBeads(pen, hr.height, [0.55]);
       addChain('story', host, pen);
     }
@@ -1110,7 +1111,7 @@
       triggers.push(heroTw); heroPin = heroTw.scrollTrigger;
     } else heroUpdate(1);
     lineTrigger(heroChain, { trigger: '#hero', start: 0, end: () => (heroPin ? heroPin.end : 0) + 0.4 * vh() });
-    lineTrigger(storyChain, { start: 'top 60%', end: 'bottom 60%' });
+    lineTrigger(storyChain, { start: 'top 60%', end: 'bottom 60%', scrub: fine ? 2.4 : 3 });   // the lattice draws itself slowly, whatever the swipe
 
     menuTween = gsap.to('#menuTrack', {
       x: () => -SGN() * menuTravel(), ease: 'none',
@@ -1193,6 +1194,9 @@
     const defs = el('defs', {}, svg);
     const clip = el('clipPath', { id: 'cup-in' }, defs);
     el('path', { d: 'M46 92L74 384Q76 404 98 404H202Q224 404 226 384L254 92Z' }, clip);
+    // the cup waits, barely there, for the magic to draw it: the first screen is never empty
+    const ghost = el('g', { class: 'sc-ghost' }, svg);
+    ['M34 80H266', 'M42 80L72 386Q74 410 100 410H200Q226 410 228 386L258 80', 'M100 384V268A50 50 0 0 1 200 268V384Z'].forEach(d => el('path', { d }, ghost));
     const pour = el('path', { class: 'sc sc-pour', d: 'M168 -170V300' }, svg);
     const liquidG = el('g', { 'clip-path': 'url(#cup-in)' }, svg);
     const liquid = el('rect', { class: 'sc-liquid', x: 30, y: 400, width: 240, height: 300 }, liquidG);
@@ -1270,8 +1274,10 @@
 
   const RANGES = [[0.12, 0.33], [0.35, 0.58], [0.60, 0.83], [0.85, 1.01]];   // each holds until just before the next
   let capShown = -1;
+  const heroCue = $('.hero-cue');
   function heroUpdate(p) {
     if (heroVideo) heroVideo(p);
+    if (heroCue) heroCue.style.opacity = Math.max(0, 1 - p / 0.06).toFixed(3);
     if (scene && $('#heroMedia').dataset.mode !== 'video') scene.progress(p);
     const caps = $$('#heroCaptions .hero-cap');
     let active = -1;
@@ -1500,20 +1506,20 @@
     }
     return Promise.all(jobs);
   }
-  // The entrance: the star breathes and a bar of light fills as the site loads, each
-  // stretch of it with a soft note. Browsers keep sound off until the visitor touches the
-  // page, unless they already allow this site: then it all plays and the site opens by
-  // itself. Otherwise, once the light is full, the gate asks for one touch (or click, or
-  // key), and that touch opens the site with its sound.
+  // The entrance: the star breathes and a bar of light fills as the site loads, then the
+  // site opens by itself, sound on. Where the browser already lets the site sound, each
+  // stretch of the light has a soft note and the door opens with a chime; elsewhere
+  // (phones, Safari) sound is held back by the browser until the first tap, and that tap
+  // is greeted with the chime instead.
   function entrance() {
     return new Promise(resolve => {
       const g = $('#ldGate');
       if (!g) { resolve(); return; }
-      const barBox = $('.ld-gate-bar', g), bar = $('i', barBox), label = $('.ld-gate-label', g);
+      const barBox = $('.ld-gate-bar', g), bar = $('i', barBox);
       $('.ld-gate-star', g).innerHTML = `<svg viewBox="${LOW.cx - LOW.r} ${LOW.cy - LOW.r} ${2 * LOW.r} ${2 * LOW.r}"><path d="${LOW.d}"/></svg>`;
       const lockWas = document.documentElement.style.overflow;
       document.documentElement.style.overflow = 'hidden';
-      let heard = false, waiting = false, done = false, notes = 0;
+      let heard = false, notes = 0;
       SND.probe().then(ok => { if (ok) heard = true; });
       const shown = { v: 0 };
       const render = () => {
@@ -1523,37 +1529,18 @@
         while (heard && SND.enabled() && notes < 4 && shown.v >= 0.18 + notes * 0.24) sfx.gateNote(notes++);
       };
       const open = () => {
-        if (done) return; done = true;
-        removeEventListener('click', onGesture, true); removeEventListener('keydown', onGesture, true);
-        if (SND.enabled()) sfx.gateOpen();
+        if (heard && SND.enabled()) sfx.gateOpen();
+        else SND.onFirstSound(() => sfx.welcome());       // the first tap is greeted
         document.documentElement.style.overflow = lockWas;
-        g.classList.remove('is-waiting'); g.removeAttribute('role'); g.removeAttribute('tabindex');
         gsap.to(g, { opacity: 0, duration: 0.55, delay: 0.12, ease: 'power2.inOut', onComplete: () => g.remove() });
         setTimeout(resolve, 240);
-      };
-      function onGesture(e) {
-        if (e.type === 'keydown' && (e.metaKey || e.ctrlKey || e.altKey || e.key === 'Tab' || e.key === 'Shift')) return;
-        SND.unlock(); heard = true;
-        if (waiting) { e.preventDefault(); open(); }
-      }
-      addEventListener('click', onGesture, true); addEventListener('keydown', onGesture, true);
-      const ask = () => {
-        if (heard || !SND.enabled()) { open(); return; }
-        waiting = true;
-        const t = T().gate, text = fine ? t.enterClick : t.enterTouch;
-        g.setAttribute('role', 'button'); g.tabIndex = 0; g.setAttribute('aria-label', text);
-        gsap.to(label, { opacity: 0, duration: 0.3, ease: 'power1.in', onComplete: () => {
-          label.textContent = text; g.classList.add('is-waiting');
-          gsap.fromTo(label, { opacity: 0 }, { opacity: 0.92, duration: 0.6, ease: 'power1.out', clearProps: 'opacity' });
-        } });
-        g.focus({ preventScroll: true });
       };
       const t0 = performance.now();
       let target = 0;
       preload(f => { if (f > target) { target = f; gsap.to(shown, { v: target * 0.94, duration: 0.45, ease: 'power2.out', overwrite: true, onUpdate: render }); } })
         .then(() => {
           const wait = Math.max(0, 500 - (performance.now() - t0)) / 1000;   // never a flash
-          gsap.to(shown, { v: 1, duration: 0.4, delay: wait, ease: 'power2.inOut', overwrite: true, onUpdate: render, onComplete: () => setTimeout(ask, 120) });
+          gsap.to(shown, { v: 1, duration: 0.4, delay: wait, ease: 'power2.inOut', overwrite: true, onUpdate: render, onComplete: () => setTimeout(open, 120) });
         });
     });
   }

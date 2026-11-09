@@ -214,6 +214,7 @@ html[lang="en"] .mmenu-lang { font-family: var(--font-fa); }
 .hero-media[data-mode="video"] ~ .hero-scene { display: none; }
 .hero-scene .sc { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .hero-scene .sc-thin { stroke-width: 1.2; opacity: .6; }
+.hero-scene .sc-ghost path { fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; opacity: .16; }
 .hero-scene .sc-sticker { stroke-width: 1.6; }
 .hero-scene .sc-pour { stroke: var(--ube-lilac); stroke-width: 5; }
 .hero-scene .sc-liquid { fill: var(--ube-lilac); opacity: .55; }
@@ -240,10 +241,13 @@ html[lang="en"] .mmenu-lang { font-family: var(--font-fa); }
 .hero-cap span { display: block; margin-top: var(--s-3); font-size: var(--fs-caption); color: var(--fg-soft); }
 .hero-cap.is-tada b { font-size: var(--fs-display); line-height: 1.05; }
 .hero-cue { position: absolute; bottom: clamp(24px, 4.5vh, 40px); inset-inline-end: calc(var(--pad) + 8px); font-size: var(--fs-small); color: var(--fg-soft); margin: 0; z-index: 3; }
+.hero-cue::after { content: ""; display: block; width: 1px; height: 22px; margin: 10px auto 0; background: linear-gradient(currentColor, transparent); transform-origin: top; animation: cue-breathe 3.2s ease-in-out infinite; }
+@keyframes cue-breathe { 0%, 100% { opacity: .35; transform: scaleY(.6); } 50% { opacity: .9; transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .hero-cue::after { animation: none; } }
 @media (max-width: 767px) {
   .hero-word { width: min(62vw, 280px); }
   .hero-cap { inset-inline-start: var(--pad); inset-inline-end: var(--pad); }
-  .hero-cue { display: none; }
+  .hero-cue { inset-inline: 0; text-align: center; bottom: max(20px, 3.5svh); }
 }
 
 /* ---------- story: the shippo lattice beside the words ---------- */
@@ -386,11 +390,11 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
    page-wide grid, so the pattern runs on across section edges as a single piece. The
    halo under the mouse is one shape in screen space, drawn into each section it touches. */
 .bg-field { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: -1; }
-.bg-sheet, .bg-aura { position: absolute; left: 0; right: 0; top: calc(-1 * var(--tile, 72px)); bottom: 0; will-change: transform;
+.bg-sheet, .bg-aura { position: absolute; left: 0; right: 0; top: calc(-1 * var(--tile, 72px)); bottom: 0;
   background: url("../assets/brand/tada-pattern-tile_purple.svg") 0 0 / var(--tile, 72px) var(--tile, 72px) repeat; }
 .bg-sheet { opacity: .034; }
 .hero .bg-sheet { background-image: url("../assets/brand/tada-pattern-tile_white.svg"); opacity: .028; }
-.bg-aura { opacity: 0;
+.bg-aura { opacity: 0; will-change: transform, opacity;
   background: radial-gradient(240px circle at var(--ax, -999px) var(--ay, -999px), rgba(146, 109, 143, .1), rgba(146, 109, 143, 0) 70%),
               url("../assets/brand/tada-pattern-tile_purple.svg") var(--fx, 0) 0 / var(--tile, 72px) var(--tile, 72px) repeat;
   -webkit-mask-image: radial-gradient(170px circle at var(--ax, -999px) var(--ay, -999px), #000 0%, rgba(0, 0, 0, .55) 50%, transparent 100%),
@@ -465,5 +469,6 @@ html[lang="en"] .glass.nav-lang, html[lang="en"] .glass.mmenu-lang { font-family
 @media (max-width: 600px) { .nav-menu-btn.glass { display: inline-flex; } }
 @media (hover: none), (pointer: coarse) {
   /* glass stays light on phones: a small blur only on these few pills */
-  .glass { -webkit-backdrop-filter: blur(10px) saturate(1.5); backdrop-filter: blur(10px) saturate(1.5); }
+  .glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .glass:hover::after { opacity: 0; }                     /* no sticky hover light after a tap */
 }

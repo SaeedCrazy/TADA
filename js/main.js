@@ -110,18 +110,14 @@
     if (k === dotOn && dots[k].classList.contains('is-on')) return;
     dotOn = k; dots.forEach((d, i) => d.classList.toggle('is-on', i === k));
   }
-  // the arrows: a thin line ending in a kit sparkle
-  const arrowSvg = () => { const k = 4.6 / LOW.r;
-    return `<svg viewBox="0 0 30 14" aria-hidden="true"><path class="ar-line" d="M2 7H19.5"/><path class="ar-star" transform="translate(25 7) scale(${k.toFixed(4)}) translate(${-LOW.cx} ${-LOW.cy})" d="${LOW.d}"/></svg>`; };
+  // < and >: faint, on the product itself, each pointing to its own edge
+  const chevron = toRight => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${toRight ? 'M9 4.5L16.5 12L9 19.5' : 'M15 4.5L7.5 12L15 19.5'}"/></svg>`;
   function buildMenu() {
     const t = T(), track = $('#menuTrack');
     $$('.label', track).forEach(n => n.remove());
     $('#menuDots').innerHTML = '<i></i>'.repeat(t.menu.items.length);
     dotOn = -1; setDot(0);
     const rtl = t.dir === 'rtl';
-    [['#menuPrev', t.menu.prev, !rtl], ['#menuNext', t.menu.next, rtl]].forEach(([sel, name, flip]) => {
-      const b = $(sel); b.innerHTML = arrowSvg(); b.setAttribute('aria-label', name); b.title = name; b.classList.toggle('is-flip', flip);
-    });
     t.menu.items.forEach(it => {
       const lab = document.createElement('article');
       lab.className = 'label';
@@ -158,6 +154,10 @@
         $('.label-note', lab).textContent = it.note;
       }
       dressLabel(lab);
+      // prev sits at the start edge and next at the end edge (right and left in Persian)
+      lab.insertAdjacentHTML('beforeend',
+        `<button class="label-arrow is-prev" type="button" data-dir="-1" data-sfx="none" tabindex="-1" aria-label="${t.menu.prev}">${chevron(rtl)}</button>` +
+        `<button class="label-arrow is-next" type="button" data-dir="1" data-sfx="none" tabindex="-1" aria-label="${t.menu.next}">${chevron(!rtl)}</button>`);
       track.appendChild(lab);
     });
   }
@@ -454,7 +454,7 @@
     const cx = document.documentElement.clientWidth / 2;
     let best = 0, bd = Infinity;
     const rs = labs.map((lab, i) => { const r = lab.getBoundingClientRect(), d = Math.abs((r.left + r.right) / 2 - cx); if (d < bd) { bd = d; best = i; } return r; });
-    if (best !== menuActive) { menuActive = best; setDot(best); paintArrows(); }
+    if (best !== menuActive) { menuActive = best; setDot(best); paintArrows(labs); }
     labs.forEach((lab, i) => {
       const r = rs[i], d = Math.abs((r.left + r.right) / 2 - cx);
       const upright = r.top >= -2 && r.bottom <= H + 2;
@@ -467,27 +467,16 @@
       if (on) sfx.tile(lab.__i || 0);
     });
   }
-  function paintArrows() {
-    const n = $$('#menuTrack .label').length, k = Math.max(0, menuActive);
-    const p = $('#menuPrev'), nx = $('#menuNext');
-    if (p) p.setAttribute('aria-disabled', String(k <= 0));
-    if (nx) nx.setAttribute('aria-disabled', String(k >= n - 1));
-    placeArrows();
-  }
-  // wide screens: the arrows float in the gaps beside the product in the centre
-  function placeArrows() {
-    const nav = $('#menuNav'); if (!nav) return;
-    const wide = document.documentElement.clientWidth > 860;
-    nav.classList.toggle('is-floating', wide);
-    if (!wide) return;
-    const labs = $$('#menuTrack .label'), lab = labs[Math.max(0, menuActive)]; if (!lab) return;
-    const vw = document.documentElement.clientWidth, base = nav.getBoundingClientRect();
-    const gap = parseFloat(getComputedStyle(lab.parentElement).columnGap) || 72;
-    const half = lab.offsetWidth / 2 + gap / 2, tr = $('#menuTrack').getBoundingClientRect();
-    const midY = tr.top + lab.offsetTop + lab.offsetHeight / 2 - base.top;
-    const sgn = SGN();
-    const at = (b, side) => { b.style.setProperty('--ax', (vw / 2 + side * half - base.left).toFixed(1) + 'px'); b.style.setProperty('--ay', midY.toFixed(1) + 'px'); };
-    at($('#menuPrev'), -sgn); at($('#menuNext'), sgn);
+  // only the product in front shows its < >; the first has no back, the last no forward
+  function paintArrows(labs) {
+    labs.forEach((lab, i) => {
+      const on = i === menuActive;
+      lab.classList.toggle('is-front', on);
+      $$('.label-arrow', lab).forEach(b => {
+        const end = (b.classList.contains('is-prev') && i === 0) || (b.classList.contains('is-next') && i === labs.length - 1);
+        b.hidden = end; b.tabIndex = on ? 0 : -1;
+      });
+    });
   }
   // where the window must be for product i to sit in the centre
   function menuSnapsY() {
@@ -552,8 +541,11 @@
       acc += e.deltaX; if (Math.abs(acc) < 36) return;
       goMenu(Math.max(0, menuActive) + (acc * SGN() > 0 ? 1 : -1)); acc = 0; lock = now + 650;
     }, { passive: false, capture: true });
-    $('#menuPrev').addEventListener('click', () => goMenu(Math.max(0, menuActive) - 1));
-    $('#menuNext').addEventListener('click', () => goMenu(Math.max(0, menuActive) + 1));
+    $('#menuTrack').addEventListener('click', e => {
+      const b = e.target.closest('.label-arrow'); if (!b) return;
+      e.stopPropagation(); sfx.nav();
+      goMenu(Math.max(0, menuActive) + Number(b.dataset.dir));
+    }, true);
     // the arrow keys, while the products fill the screen
     addEventListener('keydown', e => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
@@ -1568,7 +1560,8 @@
     zoomFrom = lab;
     const card = lab.cloneNode(true);
     card.removeAttribute('style'); card.removeAttribute('tabindex'); card.removeAttribute('aria-haspopup');
-    card.classList.remove('fit-0', 'fit-1', 'fit-2', 'is-hover', 'is-framed');
+    card.classList.remove('fit-0', 'fit-1', 'fit-2', 'is-hover', 'is-framed', 'is-front');
+    $$('.label-arrow', card).forEach(b => b.remove());
     $$('[style]', card).forEach(n => n.removeAttribute('style'));
     $$('.label-band', card).forEach(b => b.classList.add('is-lit'));
     card.classList.add('is-zoomed');
@@ -1759,20 +1752,21 @@
     }
     return Promise.all(jobs);
   }
-  // The entrance: the star breathes and a bar of light fills as the site loads, then the
-  // site opens by itself, sound on. Where the browser already lets the site sound, each
-  // stretch of the light has a soft note and the door opens with a chime; elsewhere
-  // (phones, Safari) sound is held back by the browser until the first tap, and that tap
-  // is greeted with the chime instead.
+  // The entrance: the star breathes and a bar of light fills as the site loads. Sound is
+  // on from the first moment: where the browser already lets the site sound, each stretch
+  // of the light has a soft note and the site opens by itself with a chime. Phones and
+  // Safari only let a page sound after the visitor touches it, so there the full bar
+  // becomes the first piece of magic: the star waits, glowing, and one touch opens the
+  // site with its sound, so the snap and every note after it are heard.
   function entrance() {
     return new Promise(resolve => {
       const g = $('#ldGate');
       if (!g) { resolve(); return; }
-      const barBox = $('.ld-gate-bar', g), bar = $('i', barBox);
+      const barBox = $('.ld-gate-bar', g), bar = $('i', barBox), label = $('.ld-gate-label', g);
       $('.ld-gate-star', g).innerHTML = `<svg viewBox="${LOW.cx - LOW.r} ${LOW.cy - LOW.r} ${2 * LOW.r} ${2 * LOW.r}"><path d="${LOW.d}"/></svg>`;
       const lockWas = document.documentElement.style.overflow;
       document.documentElement.style.overflow = 'hidden';
-      let heard = false, notes = 0;
+      let heard = false, notes = 0, waiting = false, done = false;
       SND.probe().then(ok => { if (ok) heard = true; });
       const shown = { v: 0 };
       const render = () => {
@@ -1782,18 +1776,40 @@
         while (heard && SND.enabled() && notes < 4 && shown.v >= 0.18 + notes * 0.24) sfx.gateNote(notes++);
       };
       const open = () => {
-        if (heard && SND.enabled()) sfx.gateOpen();
-        else SND.onFirstSound(() => sfx.welcome());       // the first tap is greeted
+        if (done) return; done = true;
+        removeEventListener('click', onTouch, true); removeEventListener('keydown', onTouch, true);
+        if (SND.enabled()) sfx.gateOpen();
         document.documentElement.style.overflow = lockWas;
-        gsap.to(g, { opacity: 0, duration: 0.55, delay: 0.12, ease: 'power2.inOut', onComplete: () => g.remove() });
-        setTimeout(resolve, 240);
+        g.classList.remove('is-waiting'); g.removeAttribute('role'); g.removeAttribute('tabindex');
+        if (!reduce) spawn(null, innerWidth / 2, $('.ld-gate-star', g).getBoundingClientRect().top + 15, true, 12, { radial: true, speed: 70, spread: 4, life: 0.9, rise: 0 });
+        gsap.to(g, { opacity: 0, duration: 0.6, delay: 0.15, ease: 'power2.inOut', onComplete: () => g.remove() });
+        setTimeout(resolve, 300);
+      };
+      // the touch that opens: it also wakes the sound, inside the same gesture
+      function onTouch(e) {
+        if (e.type === 'keydown' && (e.metaKey || e.ctrlKey || e.altKey || e.key === 'Tab' || e.key === 'Shift')) return;
+        SND.unlock(); heard = true;
+        if (waiting) { e.preventDefault(); open(); }
+      }
+      addEventListener('click', onTouch, true); addEventListener('keydown', onTouch, true);
+      const ready = () => {
+        if (heard || !SND.enabled()) { open(); return; }
+        waiting = true;
+        const text = T().gate.tap;
+        g.setAttribute('role', 'button'); g.tabIndex = 0; g.setAttribute('aria-label', text);
+        gsap.to(barBox, { opacity: 0, scaleX: 0.6, duration: 0.6, ease: 'power2.inOut' });
+        gsap.to(label, { opacity: 0, duration: 0.3, ease: 'power1.in', onComplete: () => {
+          label.textContent = text; g.classList.add('is-waiting');
+          gsap.fromTo(label, { opacity: 0 }, { opacity: 0.92, duration: 0.7, ease: 'power1.out', clearProps: 'opacity' });
+        } });
+        g.focus({ preventScroll: true });
       };
       const t0 = performance.now();
       let target = 0;
       preload(f => { if (f > target) { target = f; gsap.to(shown, { v: target * 0.94, duration: 0.45, ease: 'power2.out', overwrite: true, onUpdate: render }); } })
         .then(() => {
           const wait = Math.max(0, 500 - (performance.now() - t0)) / 1000;   // never a flash
-          gsap.to(shown, { v: 1, duration: 0.4, delay: wait, ease: 'power2.inOut', overwrite: true, onUpdate: render, onComplete: () => setTimeout(open, 120) });
+          gsap.to(shown, { v: 1, duration: 0.4, delay: wait, ease: 'power2.inOut', overwrite: true, onUpdate: render, onComplete: () => setTimeout(ready, 120) });
         });
     });
   }
@@ -1820,7 +1836,6 @@
     if (!started) return;
     buildRoute();
     ScrollTrigger.refresh();
-    placeArrows();
   }
   // a layout that changes after it was measured (late fonts, a browser's text size, an
   // image) rebuilds the route, so the line always runs where things really are

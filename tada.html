@@ -281,7 +281,7 @@ html[lang="en"] .mmenu-lang { font-family: var(--font-fa); }
 .story-lattice { width: var(--lat-w, 476px); height: var(--lat-h, 204px); }
 .story-text { max-width: 34rem; }
 @media (max-width: 860px) {
-  .story-grid { grid-template-columns: 1fr; gap: var(--s-8); }
+  .story-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-8); }
 }
 
 /* ---------- menu: pinned, the labels slide; the magic draws the shelf ---------- */
@@ -500,25 +500,22 @@ html[lang="en"] .glass.nav-lang, html[lang="en"] .glass.mmenu-lang { font-family
   .glass:hover::after { opacity: 0; }                     /* no sticky hover light after a tap */
 }
 
-/* ---------- the products: prev / next, the dots between them ----------
-   On phones they sit in a row under the heading; on wide screens main.js lifts the two
-   arrows into the gaps beside the product in the centre. Each arrow is a thin line that
-   ends in a kit sparkle. */
+/* ---------- the products: the dots under the heading, < > on the product in front ---------- */
 .menu-nav { display: flex; align-items: center; gap: 14px; margin-top: var(--s-4); }
-.menu-arrow { width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 50%; flex: none; z-index: 4; }
-.menu-arrow svg { display: block; width: 28px; height: 14px; overflow: visible; transition: transform .6s var(--ease-out); }
-.menu-arrow .ar-line { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
-.menu-arrow .ar-star { fill: currentColor; transform-box: fill-box; transform-origin: center; }
-.menu-arrow.is-flip svg { transform: scaleX(-1); }
-.menu-arrow:hover svg { transform: translateX(3px); }
-.menu-arrow.is-flip:hover svg { transform: scaleX(-1) translateX(3px); }
-.menu-arrow:hover .ar-star { animation: arrow-twinkle 1.2s var(--ease-out); }
-@keyframes arrow-twinkle { 40% { transform: rotate(45deg) scale(1.35); } 100% { transform: rotate(90deg) scale(1); } }
-.menu-arrow[aria-disabled="true"] { opacity: .32; cursor: default; }
-.menu-arrow[aria-disabled="true"]:hover { box-shadow: none; }
-.menu-nav.is-floating .menu-arrow { position: absolute; left: var(--ax, 0); top: var(--ay, 0); margin: -24px 0 0 -24px;
-  transition: left .9s var(--ease-out), top .9s var(--ease-out), opacity .4s var(--ease-out); }
-@media (prefers-reduced-motion: reduce) { .menu-arrow:hover .ar-star { animation: none; } }
+.label-arrow { position: absolute; top: 50%; z-index: 3; width: 44px; height: 64px; margin-top: -32px; padding: 0; border: 0; background: none;
+  color: var(--l-fg); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .7s var(--ease-out); }
+.label-arrow.is-prev { inset-inline-start: 2px; }
+.label-arrow.is-next { inset-inline-end: 2px; }
+.label-arrow svg { display: block; width: 22px; height: 22px; margin: auto; overflow: visible; transition: transform .5s var(--ease-out); }
+.label-arrow path { fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.label.is-front .label-arrow { opacity: .42; pointer-events: auto; }
+.label.is-front .label-arrow:hover, .label.is-front .label-arrow:focus-visible { opacity: .95; }
+.label-arrow.is-prev:hover svg { transform: translateX(calc(-3px * var(--dir-x, 1))); }
+.label-arrow.is-next:hover svg { transform: translateX(calc(3px * var(--dir-x, 1))); }
+[dir="rtl"] .label-arrow { --dir-x: -1; }
+.label-arrow:active svg { transform: scale(.86); }
+.label-arrow[hidden] { display: none; }
+.label-arrow:focus-visible { outline: 1px solid currentColor; outline-offset: -6px; border-radius: 8px; }
 
 /* browsers without small-viewport units fall back to vh */
 @supports not (height: 1svh) {
@@ -530,6 +527,10 @@ html[lang="en"] .glass.nav-lang, html[lang="en"] .glass.mmenu-lang { font-family
 
 /* touch: no grey box flashing on tap, and focus rings only for the keyboard */
 html { -webkit-tap-highlight-color: transparent; }
+/* nothing may stick out sideways: a phone would zoom the page out and everything would drift */
+html, body { overflow-x: hidden; }
+@supports (overflow-x: clip) { html, body { overflow-x: clip; } }
+.story-lattice { max-width: 100%; }
 :focus:not(:focus-visible) { outline: none; }
 
 /* the products, when the text is large or the screen short: quieter extras step aside (main.js fitMenu) */
@@ -653,6 +654,16 @@ html { -webkit-tap-highlight-color: transparent; }
 [lang="en"] .ld-gate-label { font-family: var(--font-en, inherit); }
 @media (prefers-reduced-motion: reduce) { .ld-gate-star { animation: none; } }
 
+/* the bar is full and the browser wants a touch before any sound: the star waits, glowing */
+.ld-gate.is-waiting { cursor: pointer; }
+.ld-gate.is-waiting .ld-gate-star { width: 38px; height: 38px; animation: gate-call 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 14px rgba(201, 179, 207, .9)) drop-shadow(0 0 34px rgba(146, 109, 143, .55)); transition: width .8s, height .8s; }
+@keyframes gate-call { 0%, 100% { transform: scale(.92) rotate(0deg); opacity: .85; } 50% { transform: scale(1.12) rotate(45deg); opacity: 1; } }
+.ld-gate.is-waiting .ld-gate-label { font-size: 14px; animation: gate-ask 2.4s ease-in-out infinite; }
+@keyframes gate-ask { 0%, 100% { opacity: .6; } 50% { opacity: 1; } }
+.ld-gate:focus { outline: none; }
+@media (prefers-reduced-motion: reduce) { .ld-gate.is-waiting .ld-gate-star, .ld-gate.is-waiting .ld-gate-label { animation: none; } }
+
 </style>
 </head>
 <body>
@@ -754,9 +765,7 @@ html { -webkit-tap-highlight-color: transparent; }
       <h2 class="h2" data-t="menu.title"></h2>
       <p class="lead" data-t="menu.lead"></p>
       <div class="menu-nav" id="menuNav">
-        <button class="menu-arrow glass is-prev" id="menuPrev" type="button" data-sfx="nav"></button>
         <div class="menu-dots" id="menuDots" aria-hidden="true"></div>
-        <button class="menu-arrow glass is-next" id="menuNext" type="button" data-sfx="nav"></button>
       </div>
     </div>
     <div class="menu-stage" id="menuStage">
@@ -865,7 +874,7 @@ const CONTENT = {
     dir: 'rtl',
     langSwitch: 'EN',
     skip: 'رد کردن',
-    gate: { loading: 'در حال آماده‌سازی…' },
+    gate: { loading: 'در حال آماده‌سازی…', tap: 'برای شروع جادو، لمس کنید' },
     nav: { top: 'آغاز', story: 'تادا', product: 'منو', branches: 'شعبه‌ها', collab: 'همکاری', order: 'سفارش' },
     skipTo: 'پرش به محتوا', menuBtn: 'فهرست', menuClose: 'بستن',
     sound: { on: 'صدا: روشن', off: 'صدا: خاموش' },
@@ -964,7 +973,7 @@ const CONTENT = {
     dir: 'ltr',
     langSwitch: 'فا',
     skip: 'Skip',
-    gate: { loading: 'Preparing…' },
+    gate: { loading: 'Preparing…', tap: 'Touch to begin the magic' },
     nav: { top: 'Start', story: 'Tada', product: 'Menu', branches: 'Branches', collab: 'Work with us', order: 'Order' },
     skipTo: 'Skip to content', menuBtn: 'Index', menuClose: 'Close',
     sound: { on: 'Sound: on', off: 'Sound: off' },
@@ -1841,18 +1850,14 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
     if (k === dotOn && dots[k].classList.contains('is-on')) return;
     dotOn = k; dots.forEach((d, i) => d.classList.toggle('is-on', i === k));
   }
-  // the arrows: a thin line ending in a kit sparkle
-  const arrowSvg = () => { const k = 4.6 / LOW.r;
-    return `<svg viewBox="0 0 30 14" aria-hidden="true"><path class="ar-line" d="M2 7H19.5"/><path class="ar-star" transform="translate(25 7) scale(${k.toFixed(4)}) translate(${-LOW.cx} ${-LOW.cy})" d="${LOW.d}"/></svg>`; };
+  // < and >: faint, on the product itself, each pointing to its own edge
+  const chevron = toRight => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${toRight ? 'M9 4.5L16.5 12L9 19.5' : 'M15 4.5L7.5 12L15 19.5'}"/></svg>`;
   function buildMenu() {
     const t = T(), track = $('#menuTrack');
     $$('.label', track).forEach(n => n.remove());
     $('#menuDots').innerHTML = '<i></i>'.repeat(t.menu.items.length);
     dotOn = -1; setDot(0);
     const rtl = t.dir === 'rtl';
-    [['#menuPrev', t.menu.prev, !rtl], ['#menuNext', t.menu.next, rtl]].forEach(([sel, name, flip]) => {
-      const b = $(sel); b.innerHTML = arrowSvg(); b.setAttribute('aria-label', name); b.title = name; b.classList.toggle('is-flip', flip);
-    });
     t.menu.items.forEach(it => {
       const lab = document.createElement('article');
       lab.className = 'label';
@@ -1889,6 +1894,10 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
         $('.label-note', lab).textContent = it.note;
       }
       dressLabel(lab);
+      // prev sits at the start edge and next at the end edge (right and left in Persian)
+      lab.insertAdjacentHTML('beforeend',
+        `<button class="label-arrow is-prev" type="button" data-dir="-1" data-sfx="none" tabindex="-1" aria-label="${t.menu.prev}">${chevron(rtl)}</button>` +
+        `<button class="label-arrow is-next" type="button" data-dir="1" data-sfx="none" tabindex="-1" aria-label="${t.menu.next}">${chevron(!rtl)}</button>`);
       track.appendChild(lab);
     });
   }
@@ -2185,7 +2194,7 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
     const cx = document.documentElement.clientWidth / 2;
     let best = 0, bd = Infinity;
     const rs = labs.map((lab, i) => { const r = lab.getBoundingClientRect(), d = Math.abs((r.left + r.right) / 2 - cx); if (d < bd) { bd = d; best = i; } return r; });
-    if (best !== menuActive) { menuActive = best; setDot(best); paintArrows(); }
+    if (best !== menuActive) { menuActive = best; setDot(best); paintArrows(labs); }
     labs.forEach((lab, i) => {
       const r = rs[i], d = Math.abs((r.left + r.right) / 2 - cx);
       const upright = r.top >= -2 && r.bottom <= H + 2;
@@ -2198,27 +2207,16 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       if (on) sfx.tile(lab.__i || 0);
     });
   }
-  function paintArrows() {
-    const n = $$('#menuTrack .label').length, k = Math.max(0, menuActive);
-    const p = $('#menuPrev'), nx = $('#menuNext');
-    if (p) p.setAttribute('aria-disabled', String(k <= 0));
-    if (nx) nx.setAttribute('aria-disabled', String(k >= n - 1));
-    placeArrows();
-  }
-  // wide screens: the arrows float in the gaps beside the product in the centre
-  function placeArrows() {
-    const nav = $('#menuNav'); if (!nav) return;
-    const wide = document.documentElement.clientWidth > 860;
-    nav.classList.toggle('is-floating', wide);
-    if (!wide) return;
-    const labs = $$('#menuTrack .label'), lab = labs[Math.max(0, menuActive)]; if (!lab) return;
-    const vw = document.documentElement.clientWidth, base = nav.getBoundingClientRect();
-    const gap = parseFloat(getComputedStyle(lab.parentElement).columnGap) || 72;
-    const half = lab.offsetWidth / 2 + gap / 2, tr = $('#menuTrack').getBoundingClientRect();
-    const midY = tr.top + lab.offsetTop + lab.offsetHeight / 2 - base.top;
-    const sgn = SGN();
-    const at = (b, side) => { b.style.setProperty('--ax', (vw / 2 + side * half - base.left).toFixed(1) + 'px'); b.style.setProperty('--ay', midY.toFixed(1) + 'px'); };
-    at($('#menuPrev'), -sgn); at($('#menuNext'), sgn);
+  // only the product in front shows its < >; the first has no back, the last no forward
+  function paintArrows(labs) {
+    labs.forEach((lab, i) => {
+      const on = i === menuActive;
+      lab.classList.toggle('is-front', on);
+      $$('.label-arrow', lab).forEach(b => {
+        const end = (b.classList.contains('is-prev') && i === 0) || (b.classList.contains('is-next') && i === labs.length - 1);
+        b.hidden = end; b.tabIndex = on ? 0 : -1;
+      });
+    });
   }
   // where the window must be for product i to sit in the centre
   function menuSnapsY() {
@@ -2283,8 +2281,11 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       acc += e.deltaX; if (Math.abs(acc) < 36) return;
       goMenu(Math.max(0, menuActive) + (acc * SGN() > 0 ? 1 : -1)); acc = 0; lock = now + 650;
     }, { passive: false, capture: true });
-    $('#menuPrev').addEventListener('click', () => goMenu(Math.max(0, menuActive) - 1));
-    $('#menuNext').addEventListener('click', () => goMenu(Math.max(0, menuActive) + 1));
+    $('#menuTrack').addEventListener('click', e => {
+      const b = e.target.closest('.label-arrow'); if (!b) return;
+      e.stopPropagation(); sfx.nav();
+      goMenu(Math.max(0, menuActive) + Number(b.dataset.dir));
+    }, true);
     // the arrow keys, while the products fill the screen
     addEventListener('keydown', e => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
@@ -3299,7 +3300,8 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
     zoomFrom = lab;
     const card = lab.cloneNode(true);
     card.removeAttribute('style'); card.removeAttribute('tabindex'); card.removeAttribute('aria-haspopup');
-    card.classList.remove('fit-0', 'fit-1', 'fit-2', 'is-hover', 'is-framed');
+    card.classList.remove('fit-0', 'fit-1', 'fit-2', 'is-hover', 'is-framed', 'is-front');
+    $$('.label-arrow', card).forEach(b => b.remove());
     $$('[style]', card).forEach(n => n.removeAttribute('style'));
     $$('.label-band', card).forEach(b => b.classList.add('is-lit'));
     card.classList.add('is-zoomed');
@@ -3490,20 +3492,21 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
     }
     return Promise.all(jobs);
   }
-  // The entrance: the star breathes and a bar of light fills as the site loads, then the
-  // site opens by itself, sound on. Where the browser already lets the site sound, each
-  // stretch of the light has a soft note and the door opens with a chime; elsewhere
-  // (phones, Safari) sound is held back by the browser until the first tap, and that tap
-  // is greeted with the chime instead.
+  // The entrance: the star breathes and a bar of light fills as the site loads. Sound is
+  // on from the first moment: where the browser already lets the site sound, each stretch
+  // of the light has a soft note and the site opens by itself with a chime. Phones and
+  // Safari only let a page sound after the visitor touches it, so there the full bar
+  // becomes the first piece of magic: the star waits, glowing, and one touch opens the
+  // site with its sound, so the snap and every note after it are heard.
   function entrance() {
     return new Promise(resolve => {
       const g = $('#ldGate');
       if (!g) { resolve(); return; }
-      const barBox = $('.ld-gate-bar', g), bar = $('i', barBox);
+      const barBox = $('.ld-gate-bar', g), bar = $('i', barBox), label = $('.ld-gate-label', g);
       $('.ld-gate-star', g).innerHTML = `<svg viewBox="${LOW.cx - LOW.r} ${LOW.cy - LOW.r} ${2 * LOW.r} ${2 * LOW.r}"><path d="${LOW.d}"/></svg>`;
       const lockWas = document.documentElement.style.overflow;
       document.documentElement.style.overflow = 'hidden';
-      let heard = false, notes = 0;
+      let heard = false, notes = 0, waiting = false, done = false;
       SND.probe().then(ok => { if (ok) heard = true; });
       const shown = { v: 0 };
       const render = () => {
@@ -3513,18 +3516,40 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
         while (heard && SND.enabled() && notes < 4 && shown.v >= 0.18 + notes * 0.24) sfx.gateNote(notes++);
       };
       const open = () => {
-        if (heard && SND.enabled()) sfx.gateOpen();
-        else SND.onFirstSound(() => sfx.welcome());       // the first tap is greeted
+        if (done) return; done = true;
+        removeEventListener('click', onTouch, true); removeEventListener('keydown', onTouch, true);
+        if (SND.enabled()) sfx.gateOpen();
         document.documentElement.style.overflow = lockWas;
-        gsap.to(g, { opacity: 0, duration: 0.55, delay: 0.12, ease: 'power2.inOut', onComplete: () => g.remove() });
-        setTimeout(resolve, 240);
+        g.classList.remove('is-waiting'); g.removeAttribute('role'); g.removeAttribute('tabindex');
+        if (!reduce) spawn(null, innerWidth / 2, $('.ld-gate-star', g).getBoundingClientRect().top + 15, true, 12, { radial: true, speed: 70, spread: 4, life: 0.9, rise: 0 });
+        gsap.to(g, { opacity: 0, duration: 0.6, delay: 0.15, ease: 'power2.inOut', onComplete: () => g.remove() });
+        setTimeout(resolve, 300);
+      };
+      // the touch that opens: it also wakes the sound, inside the same gesture
+      function onTouch(e) {
+        if (e.type === 'keydown' && (e.metaKey || e.ctrlKey || e.altKey || e.key === 'Tab' || e.key === 'Shift')) return;
+        SND.unlock(); heard = true;
+        if (waiting) { e.preventDefault(); open(); }
+      }
+      addEventListener('click', onTouch, true); addEventListener('keydown', onTouch, true);
+      const ready = () => {
+        if (heard || !SND.enabled()) { open(); return; }
+        waiting = true;
+        const text = T().gate.tap;
+        g.setAttribute('role', 'button'); g.tabIndex = 0; g.setAttribute('aria-label', text);
+        gsap.to(barBox, { opacity: 0, scaleX: 0.6, duration: 0.6, ease: 'power2.inOut' });
+        gsap.to(label, { opacity: 0, duration: 0.3, ease: 'power1.in', onComplete: () => {
+          label.textContent = text; g.classList.add('is-waiting');
+          gsap.fromTo(label, { opacity: 0 }, { opacity: 0.92, duration: 0.7, ease: 'power1.out', clearProps: 'opacity' });
+        } });
+        g.focus({ preventScroll: true });
       };
       const t0 = performance.now();
       let target = 0;
       preload(f => { if (f > target) { target = f; gsap.to(shown, { v: target * 0.94, duration: 0.45, ease: 'power2.out', overwrite: true, onUpdate: render }); } })
         .then(() => {
           const wait = Math.max(0, 500 - (performance.now() - t0)) / 1000;   // never a flash
-          gsap.to(shown, { v: 1, duration: 0.4, delay: wait, ease: 'power2.inOut', overwrite: true, onUpdate: render, onComplete: () => setTimeout(open, 120) });
+          gsap.to(shown, { v: 1, duration: 0.4, delay: wait, ease: 'power2.inOut', overwrite: true, onUpdate: render, onComplete: () => setTimeout(ready, 120) });
         });
     });
   }
@@ -3551,7 +3576,6 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
     if (!started) return;
     buildRoute();
     ScrollTrigger.refresh();
-    placeArrows();
   }
   // a layout that changes after it was measured (late fonts, a browser's text size, an
   // image) rebuilds the route, so the line always runs where things really are

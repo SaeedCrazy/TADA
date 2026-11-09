@@ -78,3 +78,13 @@
 .ld-gate-label { margin: 0; font: 300 13px/1.6 var(--font-fa); letter-spacing: .02em; opacity: .72; }
 [lang="en"] .ld-gate-label { font-family: var(--font-en, inherit); }
 @media (prefers-reduced-motion: reduce) { .ld-gate-star { animation: none; } }
+
+/* the bar is full and the browser wants a touch before any sound: the star waits, glowing */
+.ld-gate.is-waiting { cursor: pointer; }
+.ld-gate.is-waiting .ld-gate-star { width: 38px; height: 38px; animation: gate-call 2.4s ease-in-out infinite;
+  filter: drop-shadow(0 0 14px rgba(201, 179, 207, .9)) drop-shadow(0 0 34px rgba(146, 109, 143, .55)); transition: width .8s, height .8s; }
+@keyframes gate-call { 0%, 100% { transform: scale(.92) rotate(0deg); opacity: .85; } 50% { transform: scale(1.12) rotate(45deg); opacity: 1; } }
+.ld-gate.is-waiting .ld-gate-label { font-size: 14px; animation: gate-ask 2.4s ease-in-out infinite; }
+@keyframes gate-ask { 0%, 100% { opacity: .6; } 50% { opacity: 1; } }
+.ld-gate:focus { outline: none; }
+@media (prefers-reduced-motion: reduce) { .ld-gate.is-waiting .ld-gate-star, .ld-gate.is-waiting .ld-gate-label { animation: none; } }

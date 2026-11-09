@@ -200,7 +200,7 @@ html[lang="en"] .mmenu-lang { font-family: var(--font-fa); }
 @media (min-width: 601px) { .mmenu { display: none !important; } }
 
 /* ---------- menu progress: one shippo ring per label ---------- */
-.menu-dots { display: flex; gap: 8px; margin-top: var(--s-4); }
+.menu-dots { display: flex; gap: 8px; }
 .menu-dots i { display: block; width: 9px; height: 9px; border: 1px solid var(--tada-purple); border-radius: 50%; opacity: .5; transition: background-color var(--t-base) var(--ease-out), opacity var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out); }
 .menu-dots i.is-on { background: var(--tada-purple); opacity: 1; transform: scale(1.25); }
 
@@ -259,7 +259,8 @@ html[lang="en"] .mmenu-lang { font-family: var(--font-fa); }
 }
 
 /* ---------- menu: pinned, the labels slide; the magic draws the shelf ---------- */
-.menu { position: relative; height: 100svh; min-height: 640px; background: var(--lilac-mist); color: var(--night-purple); overflow: hidden; display: flex; flex-direction: column;
+.menu { position: relative; height: 100vh; height: 100svh; min-height: 640px; background: var(--lilac-mist); color: var(--night-purple); overflow: hidden; display: flex; flex-direction: column;
+  touch-action: pan-y;   /* sideways swipes move between products (main.js); up and down stay native */
   --panel-h: min(56svh, 520px); --panel-w: min(400px, 30vw); --pack-w: min(760px, 58vw); --panel-gap: clamp(56px, 6vw, 96px); }
 .menu-head { position: relative; z-index: 3; padding-top: calc(var(--nav-h) + clamp(24px, 4vh, 48px)); }
 .menu-head .lead { margin-top: var(--s-3); }
@@ -271,7 +272,7 @@ html[lang="en"] .mmenu-lang { font-family: var(--font-fa); }
 .menu-track .ink-track { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
 .label {
   position: relative; flex: none; width: var(--panel-w); height: var(--panel-h);
-  display: flex; flex-direction: column; padding: clamp(24px, 2.6vw, 40px);
+  display: flex; flex-direction: column; padding: calc(clamp(24px, 2.6vw, 40px) * var(--fit, 1));
   background: var(--l-bg); color: var(--l-fg);
   transform-style: preserve-3d;
 }
@@ -302,10 +303,10 @@ html[lang="en"] .mmenu-lang { font-family: var(--font-fa); }
    labels, where the text sits, carries a night-purple veil (6.5:1 or better) */
 .label[data-tone="ube"], .label[data-tone="matcha"] { background: linear-gradient(to top, rgba(53, 8, 76, .32) 0%, rgba(53, 8, 76, .32) 42%, rgba(53, 8, 76, 0) 74%), var(--l-bg); }
 .label-spark { width: 22px; height: 22px; fill: var(--l-fg); opacity: .9; }
-.label-name { margin-top: auto; font-size: clamp(38px, 4.4vw, 64px); font-weight: var(--w-regular); line-height: 1.1; }
+.label-name { margin-top: auto; font-size: calc(clamp(38px, 4.4vw, 64px) * var(--fit, 1)); font-weight: var(--w-regular); line-height: 1.1; }
 html[lang="en"] .label-name { letter-spacing: -0.02em; }
-.label-sub { margin-top: var(--s-3); font-size: var(--fs-small); font-weight: var(--w-medium); color: var(--l-soft); }
-.label-note { margin-top: var(--s-4); font-size: var(--fs-body); color: var(--l-soft); max-width: 22rem; }
+.label-sub { margin-top: var(--s-3); font-size: calc(var(--fs-small) * var(--fit, 1)); font-weight: var(--w-medium); color: var(--l-soft); }
+.label-note { margin-top: var(--s-4); font-size: calc(var(--fs-body) * var(--fit, 1)); color: var(--l-soft); max-width: 22rem; }
 .label-band { display: flex; margin-top: var(--s-6); height: 22px; }
 .label-band svg { width: 22px; height: 22px; flex: none; opacity: 0; transition: opacity var(--t-base) var(--ease-out); }
 .label-band svg path { fill: var(--l-tile); }
@@ -315,17 +316,17 @@ html[lang="en"] .label-name { letter-spacing: -0.02em; }
 .pack-grid > * { min-height: 0; }
 .pack-grid .pouch { width: 100%; height: 100%; }
 .pack-text { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
-.pack-text .label-name { margin-top: 0; font-size: clamp(30px, 3vw, 44px); }
-.specs { margin-top: var(--s-4); display: grid; grid-template-columns: max-content 1fr; gap: var(--s-2) var(--s-5); font-size: var(--fs-small); }
+.pack-text .label-name { margin-top: 0; font-size: calc(clamp(30px, 3vw, 44px) * var(--fit, 1)); }
+.specs { margin-top: var(--s-4); display: grid; grid-template-columns: max-content 1fr; gap: var(--s-2) var(--s-5); font-size: calc(var(--fs-small) * var(--fit, 1)); }
 .specs dt { color: var(--l-soft); }
 .specs dd { font-weight: var(--w-regular); }
 .rulers { margin-top: var(--s-2); display: grid; gap: 6px; }
-.ruler { display: grid; grid-template-columns: 5.5em 1fr 2.2em; align-items: center; gap: var(--s-3); font-size: var(--fs-small); }
+.ruler { display: grid; grid-template-columns: 5.5em 1fr 2.2em; align-items: center; gap: var(--s-3); font-size: calc(var(--fs-small) * var(--fit, 1)); }
 .ruler-scale { display: flex; justify-content: space-between; height: 12px; }
 .ruler-scale i { display: block; width: 1px; height: 100%; background: var(--l-soft); opacity: .55; }
 .ruler-scale i.is-val { width: 3px; background: var(--tada-purple); opacity: 1; }
 .ruler-val { text-align: end; font-weight: var(--w-regular); }
-.pack-note { margin-top: var(--s-4); font-size: 14px; line-height: 1.6; cursor: help; }
+.pack-note { margin-top: var(--s-4); font-size: calc(14px * var(--fit, 1)); line-height: 1.6; cursor: help; }
 .pack-cta { margin-top: auto; padding-top: var(--s-4); }
 .pouch text { font-family: var(--font-fa); fill: var(--white); }
 @media (max-width: 860px) {
@@ -472,3 +473,73 @@ html[lang="en"] .glass.nav-lang, html[lang="en"] .glass.mmenu-lang { font-family
   .glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
   .glass:hover::after { opacity: 0; }                     /* no sticky hover light after a tap */
 }
+
+/* ---------- the products: prev / next, the dots between them ----------
+   On phones they sit in a row under the heading; on wide screens main.js lifts the two
+   arrows into the gaps beside the product in the centre. Each arrow is a thin line that
+   ends in a kit sparkle. */
+.menu-nav { display: flex; align-items: center; gap: 14px; margin-top: var(--s-4); }
+.menu-arrow { width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 50%; flex: none; z-index: 4; }
+.menu-arrow svg { display: block; width: 28px; height: 14px; overflow: visible; transition: transform .6s var(--ease-out); }
+.menu-arrow .ar-line { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
+.menu-arrow .ar-star { fill: currentColor; transform-box: fill-box; transform-origin: center; }
+.menu-arrow.is-flip svg { transform: scaleX(-1); }
+.menu-arrow:hover svg { transform: translateX(3px); }
+.menu-arrow.is-flip:hover svg { transform: scaleX(-1) translateX(3px); }
+.menu-arrow:hover .ar-star { animation: arrow-twinkle 1.2s var(--ease-out); }
+@keyframes arrow-twinkle { 40% { transform: rotate(45deg) scale(1.35); } 100% { transform: rotate(90deg) scale(1); } }
+.menu-arrow[aria-disabled="true"] { opacity: .32; cursor: default; }
+.menu-arrow[aria-disabled="true"]:hover { box-shadow: none; }
+.menu-nav.is-floating .menu-arrow { position: absolute; left: var(--ax, 0); top: var(--ay, 0); margin: -24px 0 0 -24px;
+  transition: left .9s var(--ease-out), top .9s var(--ease-out), opacity .4s var(--ease-out); }
+@media (prefers-reduced-motion: reduce) { .menu-arrow:hover .ar-star { animation: none; } }
+
+/* browsers without small-viewport units fall back to vh */
+@supports not (height: 1svh) {
+  .hero-stage { height: 100vh; }
+  .menu { --panel-h: min(56vh, 520px); }
+  .footer { min-height: 100vh; }
+}
+@supports not (height: 1svh) { @media (max-width: 860px) { .menu { --panel-h: min(60vh, 520px); } } }
+
+/* touch: no grey box flashing on tap, and focus rings only for the keyboard */
+html { -webkit-tap-highlight-color: transparent; }
+:focus:not(:focus-visible) { outline: none; }
+
+/* the products, when the text is large or the screen short: quieter extras step aside (main.js fitMenu) */
+.menu.fit-lead .menu-head .lead { display: none; }
+.label.fit-1 .pack-grid { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); }
+.label.fit-1 .pack-grid .pouch { display: none; }
+.label.fit-2 .pack-text .rulers, .label.fit-2 .pack-text .pack-note { display: none; }
+
+.label.fit-0 .pack-grid { grid-template-rows: 20% minmax(0, 1fr); }
+@media (min-width: 861px) { .label.fit-0 .pack-grid { grid-template-rows: minmax(0, 1fr); } }
+
+/* ---------- a product, up close ---------- */
+#menuTrack .label { cursor: pointer; }
+#menuTrack .label:focus-visible { outline: 2px solid var(--tada-purple); outline-offset: 16px; }
+.zoom { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; }
+.zoom[hidden] { display: none; }
+.zoom-veil { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 45%, rgba(58, 12, 82, .93), rgba(24, 3, 36, .98)); }
+@media (hover: hover) and (pointer: fine) { .zoom-veil { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); } }
+/* on the night, the frame and its sparkles are drawn in light */
+.zoom .label-frame rect { stroke: var(--lilac); }
+.zoom .label-corner { color: #FFFFFF; }
+.zoom .label-corner svg { filter: drop-shadow(0 0 8px rgba(201, 179, 207, .9)); }
+.zoom .label { box-shadow: 0 40px 120px -40px rgba(0, 0, 0, .7), 0 0 0 1px rgba(201, 179, 207, .18); }
+.zoom-stage { position: relative; max-height: 100%; width: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
+  display: grid; place-items: center; padding: max(76px, calc(env(safe-area-inset-top) + 64px)) 16px max(40px, calc(env(safe-area-inset-bottom) + 28px)); }
+.zoom-stage::-webkit-scrollbar { display: none; }
+.zoom .label { width: min(86vw, 560px); height: auto; min-height: min(68svh, 640px); cursor: default; transform-style: flat; }
+.zoom .label .label-name { font-size: clamp(44px, 10vw, 72px); }
+.zoom .label[data-tone="pack"] { width: min(92vw, 960px); min-height: 0; }
+.zoom .pack-grid { height: auto; }
+.zoom .pack-text { overflow: visible; }
+.zoom .pack-text .specs { display: grid; }
+.zoom .pack-text .label-name { font-size: clamp(30px, 6vw, 48px); }
+@media (max-width: 860px) { .zoom .pack-grid { grid-template-columns: 1fr; grid-template-rows: auto auto; } .zoom .pack-grid .pouch { height: 30svh; } }
+.zoom-close { position: absolute; top: max(16px, calc(env(safe-area-inset-top) + 10px)); inset-inline-end: 16px; z-index: 2; width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 50%; }
+.zoom-close svg { width: 18px; height: 18px; overflow: visible; }
+.zoom-close .zc-line { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; }
+/* the magic's sparkles show above an open overlay */
+.has-overlay .magic-dust { z-index: 95; }

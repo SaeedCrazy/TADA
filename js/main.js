@@ -104,20 +104,28 @@
   // ---------- the menu track: labels in the kit palette ----------
   // the ring of the label in front lights up as the menu slides
   let dotOn = -1;
-  function setDot(p) {
+  function setDot(k) {
     const dots = $$('#menuDots i'); if (!dots.length) return;
-    const k = Math.round(Math.min(1, Math.max(0, p)) * (dots.length - 1));
+    k = Math.min(dots.length - 1, Math.max(0, k));
     if (k === dotOn && dots[k].classList.contains('is-on')) return;
     dotOn = k; dots.forEach((d, i) => d.classList.toggle('is-on', i === k));
   }
+  // the arrows: a thin line ending in a kit sparkle
+  const arrowSvg = () => { const k = 4.6 / LOW.r;
+    return `<svg viewBox="0 0 30 14" aria-hidden="true"><path class="ar-line" d="M2 7H19.5"/><path class="ar-star" transform="translate(25 7) scale(${k.toFixed(4)}) translate(${-LOW.cx} ${-LOW.cy})" d="${LOW.d}"/></svg>`; };
   function buildMenu() {
     const t = T(), track = $('#menuTrack');
     $$('.label', track).forEach(n => n.remove());
     $('#menuDots').innerHTML = '<i></i>'.repeat(t.menu.items.length);
     dotOn = -1; setDot(0);
+    const rtl = t.dir === 'rtl';
+    [['#menuPrev', t.menu.prev, !rtl], ['#menuNext', t.menu.next, rtl]].forEach(([sel, name, flip]) => {
+      const b = $(sel); b.innerHTML = arrowSvg(); b.setAttribute('aria-label', name); b.title = name; b.classList.toggle('is-flip', flip);
+    });
     t.menu.items.forEach(it => {
       const lab = document.createElement('article');
       lab.className = 'label';
+      lab.tabIndex = 0; lab.setAttribute('aria-haspopup', 'dialog');
       lab.dataset.tone = it.tone;
       if (it.kind === 'pack') {
         const p = t.product;
@@ -199,7 +207,7 @@
       links, V,
       get x() { return x; }, get y() { return y; }, get h() { return h; },
       line(dist, budget, extra) {
-        if (dist <= 0.5) return api;
+        if (dist <= 0.5) { if (!(budget > 0)) return api; dist = 0.6; }   // too short to see, but it keeps its time
         const [vx, vy] = V[h], x2 = x + vx * dist, y2 = y + vy * dist;
         push([part(mk(`M${x} ${y}L${x2} ${y2}`))], budget ?? auto(vx, dist), extra);
         x = x2; y = y2; return api;
@@ -431,20 +439,129 @@
         .set(lab, { clearProps: 'boxShadow' });
     }
   }
-  // the pen has passed the label and the label is fully on screen: only then it is framed
+  // ---------- the products: one in the centre at a time ----------
+  // The product nearest the centre is the one in front: its dot lights, and once the pen
+  // has passed under it and it has come to rest in the middle, its frame draws and its
+  // magic wakes; the others stay calm. Scrolling stops on a product (snap), sideways
+  // swipes, a trackpad's sideways scroll, the arrow keys and the two arrows all move one
+  // product at a time.
+  let menuActive = -1, menuGeom = null;
+  const $menu = $('#menu');
   function checkLabels() {
-    const vw = document.documentElement.clientWidth, H = innerHeight;
-    for (const lab of document.querySelectorAll('#menuTrack .label')) {
-      const want = !!lab.__want;
-      if (want === !!lab.__shown) continue;
-      if (want) {
-        const r = lab.getBoundingClientRect();
-        if (r.left < -2 || r.right > vw + 2 || r.top < 0 || r.bottom > H) continue;
-      }
-      lab.__shown = want;
-      frameLabel(lab, want);
-      if (want) sfx.tile(lab.__i || 0);
-    }
+    const hr = $menu.getBoundingClientRect(), H = innerHeight;
+    if (hr.bottom < 0 || hr.top > H) return;
+    const labs = $$('#menuTrack .label'); if (!labs.length) return;
+    const cx = document.documentElement.clientWidth / 2;
+    let best = 0, bd = Infinity;
+    const rs = labs.map((lab, i) => { const r = lab.getBoundingClientRect(), d = Math.abs((r.left + r.right) / 2 - cx); if (d < bd) { bd = d; best = i; } return r; });
+    if (best !== menuActive) { menuActive = best; setDot(best); paintArrows(); }
+    labs.forEach((lab, i) => {
+      const r = rs[i], d = Math.abs((r.left + r.right) / 2 - cx);
+      const upright = r.top >= -2 && r.bottom <= H + 2;
+      const arrive = i === best && d < Math.max(24, r.width * 0.06);          // at rest in the middle
+      const stay = !!lab.__shown && i === best && d < r.width * 0.3;          // and it stays until it leaves
+      const on = !!lab.__want && upright && (arrive || stay);
+      if (on === !!lab.__shown) return;
+      lab.__shown = on;
+      frameLabel(lab, on);
+      if (on) sfx.tile(lab.__i || 0);
+    });
+  }
+  function paintArrows() {
+    const n = $$('#menuTrack .label').length, k = Math.max(0, menuActive);
+    const p = $('#menuPrev'), nx = $('#menuNext');
+    if (p) p.setAttribute('aria-disabled', String(k <= 0));
+    if (nx) nx.setAttribute('aria-disabled', String(k >= n - 1));
+    placeArrows();
+  }
+  // wide screens: the arrows float in the gaps beside the product in the centre
+  function placeArrows() {
+    const nav = $('#menuNav'); if (!nav) return;
+    const wide = document.documentElement.clientWidth > 860;
+    nav.classList.toggle('is-floating', wide);
+    if (!wide) return;
+    const labs = $$('#menuTrack .label'), lab = labs[Math.max(0, menuActive)]; if (!lab) return;
+    const vw = document.documentElement.clientWidth, base = nav.getBoundingClientRect();
+    const gap = parseFloat(getComputedStyle(lab.parentElement).columnGap) || 72;
+    const half = lab.offsetWidth / 2 + gap / 2, tr = $('#menuTrack').getBoundingClientRect();
+    const midY = tr.top + lab.offsetTop + lab.offsetHeight / 2 - base.top;
+    const sgn = SGN();
+    const at = (b, side) => { b.style.setProperty('--ax', (vw / 2 + side * half - base.left).toFixed(1) + 'px'); b.style.setProperty('--ay', midY.toFixed(1) + 'px'); };
+    at($('#menuPrev'), -sgn); at($('#menuNext'), sgn);
+  }
+  // where the window must be for product i to sit in the centre
+  function menuSnapsY() {
+    if (!menuGeom || !menuPin) return [];
+    const a = menuPin.start, b = menuPin.end;
+    return menuGeom.ps.map(p => a + p * (b - a));
+  }
+  let snapTw = null, snapAt = -1;
+  function scrollToY(y, dur) {
+    if (snapTw) { snapTw.kill(); snapTw = null; }
+    snapAt = y;
+    if (lenis) { lenis.scrollTo(y, { duration: dur, easing: t => 1 - Math.pow(1 - t, 3) }); return; }
+    const o = { y: scrollY };
+    snapTw = gsap.to(o, { y, duration: dur, ease: 'power2.inOut', onUpdate: () => window.scrollTo(0, o.y), onComplete: () => { snapTw = null; } });
+  }
+  function goMenu(k) {
+    const ys = menuSnapsY(); if (!ys.length) return;
+    k = Math.max(0, Math.min(ys.length - 1, k));
+    const from = menuActive < 0 ? k : menuActive;
+    scrollToY(ys[k], reduce ? 0.01 : Math.min(1.5, 0.75 + 0.22 * Math.abs(k - from)));
+  }
+  // when the scroll comes to rest inside the products, it settles on one, leaning the way it was going
+  let idleT = 0, touching = false, restY = 0;
+  function trySnap() {
+    if (touching || snapTw || reduce) return;
+    const ys = menuSnapsY(), y = scrollY; if (ys.length < 2) return;
+    if (y < ys[0] - 1 || y > ys[ys.length - 1] + 1) { restY = y; return; }
+    let i = 0; while (i < ys.length - 2 && y > ys[i + 1]) i++;
+    const f = (y - ys[i]) / Math.max(1, ys[i + 1] - ys[i]), dir = Math.sign(y - restY);
+    const k = dir > 0 ? (f > 0.18 ? i + 1 : i) : dir < 0 ? (f < 0.82 ? i : i + 1) : (f < 0.5 ? i : i + 1);
+    restY = ys[k];
+    if (Math.abs(ys[k] - y) > 1.5) scrollToY(ys[k], 0.8);
+  }
+  const armSnap = () => { clearTimeout(idleT); idleT = setTimeout(trySnap, lenis ? 110 : 170); };
+  addEventListener('scroll', () => { if (!snapTw) armSnap(); }, { passive: true });
+  addEventListener('touchstart', () => { touching = true; if (snapTw) { snapTw.kill(); snapTw = null; } }, { passive: true });
+  addEventListener('touchend', () => { touching = false; armSnap(); }, { passive: true });
+  addEventListener('touchcancel', () => { touching = false; armSnap(); }, { passive: true });
+  addEventListener('wheel', () => { if (snapTw) { snapTw.kill(); snapTw = null; } }, { passive: true });
+  // a sideways swipe on the products moves one product (content follows the finger)
+  {
+    let x0 = 0, y0 = 0, side = null;
+    $menu.addEventListener('touchstart', e => { const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; side = null; }, { passive: true });
+    $menu.addEventListener('touchmove', e => {
+      if (side !== null) return;
+      const t = e.touches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) side = Math.abs(dx) > Math.abs(dy) * 1.15;
+    }, { passive: true });
+    $menu.addEventListener('touchend', e => {
+      if (!side) return;
+      const dx = e.changedTouches[0].clientX - x0; side = null;
+      if (Math.abs(dx) < 32) return;
+      touching = false;
+      goMenu(Math.max(0, menuActive) + (dx * SGN() < 0 ? 1 : -1));
+    }, { passive: true });
+    // a trackpad's (or shift + wheel) sideways scroll: one product per gesture
+    let acc = 0, lock = 0;
+    $menu.addEventListener('wheel', e => {
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      e.preventDefault(); e.stopPropagation();
+      const now = performance.now(); if (now < lock) return;
+      acc += e.deltaX; if (Math.abs(acc) < 36) return;
+      goMenu(Math.max(0, menuActive) + (acc * SGN() > 0 ? 1 : -1)); acc = 0; lock = now + 650;
+    }, { passive: false, capture: true });
+    $('#menuPrev').addEventListener('click', () => goMenu(Math.max(0, menuActive) - 1));
+    $('#menuNext').addEventListener('click', () => goMenu(Math.max(0, menuActive) + 1));
+    // the arrow keys, while the products fill the screen
+    addEventListener('keydown', e => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      if (e.altKey || e.ctrlKey || e.metaKey || (e.target.closest && e.target.closest('input, textarea, select, [contenteditable]'))) return;
+      const r = $menu.getBoundingClientRect(); if (r.top > 2 || r.bottom < innerHeight - 2) return;
+      e.preventDefault();
+      goMenu(Math.max(0, menuActive) + ((e.key === 'ArrowRight' ? 1 : -1) * SGN() > 0 ? 1 : -1));
+    });
   }
 
   // ---------- one pattern sheet for the whole page ----------
@@ -913,6 +1030,43 @@
     footer = null; parked = false;
   }
 
+  // Large text (a browser's text size, accessibility scaling) must never be clipped: the
+  // labels grow to the room there is, and if the text still does not fit, the labels'
+  // type scales down together until it does.
+  function fitMenu(host, track) {
+    const labs = $$('.label', track); if (!labs.length) return;
+    host.classList.remove('fit-lead'); host.style.removeProperty('--panel-h');
+    labs.forEach(l => { l.classList.remove('fit-0', 'fit-1', 'fit-2'); l.style.removeProperty('--fit'); });
+    // how far a label's text runs past the room it has (layout boxes only: the frame and its stars sit outside on purpose)
+    const runOver = (box, limit) => { let m = -Infinity; for (const c of box.children) { if (!(c instanceof HTMLElement)) continue; const cs = getComputedStyle(c); if (cs.position === 'absolute' || cs.position === 'fixed' || cs.display === 'none') continue; m = Math.max(m, c.offsetTop + c.offsetHeight + parseFloat(cs.marginBottom || 0)); } return m - limit; };
+    const overOf = l => { const pt = $('.pack-text', l); return Math.max(0, pt ? runOver(pt, pt.offsetTop + pt.clientHeight) : runOver(l, l.clientHeight - parseFloat(getComputedStyle(l).paddingBottom || 0))); };
+    // the labels take the room above the shelf, never more (all the same height)
+    const size = () => {
+      host.style.removeProperty('--panel-h');
+      const room = host.clientHeight - (track.getBoundingClientRect().top - host.getBoundingClientRect().top) - (small() ? 70 : 100);
+      const h = labs[0].clientHeight, o = Math.max(...labs.map(overOf));
+      const want = o > 1 ? h + o + 8 : h;
+      if (want > room || h > room) host.style.setProperty('--panel-h', Math.max(200, Math.min(want, room)).toFixed(0) + 'px');
+      else if (want > h) host.style.setProperty('--panel-h', want.toFixed(0) + 'px');
+    };
+    // a label whose text still runs over steps down gently, on its own: smaller type first,
+    // then its quieter extras step aside (the bag picture, then the taste rulers and the note)
+    const steps = [0.94, 'fit-0', 0.88, 'fit-1', 0.88, 0.82, 'fit-2', 0.82, 0.76, 0.7];
+    const settle = () => labs.forEach(l => {
+      for (const st of steps) {
+        if (overOf(l) <= 1) return;
+        if (typeof st === 'string') l.classList.add(st); else l.style.setProperty('--fit', String(st));
+      }
+    });
+    size(); settle();
+    // still too much: the heading's lead line steps aside too, and everything is measured again
+    if (Math.max(...labs.map(overOf)) > 1) {
+      host.classList.add('fit-lead');
+      labs.forEach(l => { l.classList.remove('fit-0', 'fit-1', 'fit-2'); l.style.removeProperty('--fit'); });
+      size(); settle();
+    }
+  }
+
   function buildRoute() {
     killRoute();
     // the line is the A's own stroke, continued: same weight on screen, nothing thinner or thicker
@@ -970,6 +1124,12 @@
     // ---------------- menu: pinned; the magic stays put and draws the shelf ----------------
     {
       const host = $('#menu'), track = $('#menuTrack'), tsvg = $('.ink[data-ink="menu-track"]'), svg = $('.ink[data-ink="menu"]');
+      fitMenu(host, track);
+      const labEls = $$('.label', track);
+      if (labEls.length) {                                           // the first and the last product can rest in the centre
+        track.style.paddingInlineStart = Math.max(16, (vw - labEls[0].offsetWidth) / 2).toFixed(1) + 'px';
+        track.style.paddingInlineEnd = Math.max(16, (vw - labEls[labEls.length - 1].offsetWidth) / 2).toFixed(1) + 'px';
+      }
       const hr = host.getBoundingClientRect();
       sizeSvg(svg, hr.width, hr.height);
       const trr = track.getBoundingClientRect();
@@ -1023,6 +1183,9 @@
       });
       straight(uEnd - R0, true);
       pen.turn('S', R0);
+      // snap points: the track progress at which each product sits in the centre
+      menuGeom = { ps: items.map(it => Math.min(1, Math.max(0, ((it.ua + it.ub) / 2 - vw / 2) / Math.max(1, travel)))) };
+      menuActive = -1;
       // exit: fixed in the section, from where the track's end comes to rest
       const ex = makePen(svg, xf, shelfY + R0, 'S', sgn);
       ex.line(hr.height - (shelfY + R0), 0.4 * H);
@@ -1115,7 +1278,7 @@
 
     menuTween = gsap.to('#menuTrack', {
       x: () => -SGN() * menuTravel(), ease: 'none',
-      scrollTrigger: { trigger: '#menu', start: 'top top', end: () => '+=' + menuTravel(), pin: true, scrub: 1, anticipatePin: 1, invalidateOnRefresh: true, onUpdate: st => setDot(st.progress) },
+      scrollTrigger: { trigger: '#menu', start: 'top top', end: () => '+=' + menuTravel(), pin: true, scrub: 1, anticipatePin: 1, invalidateOnRefresh: true },
     });
     triggers.push(menuTween); menuPin = menuTween.scrollTrigger;
     lineTrigger(menuChain, { trigger: '#menu', start: () => menuPin.start - 0.6 * vh(), end: () => menuPin.end + 0.4 * vh() });
@@ -1359,7 +1522,7 @@
     if (!mm.hidden) return;
     mmOpener = from || menuBtn;
     const [cx, cy] = centre(mmOpener);
-    mm.hidden = false; menuBtn.setAttribute('aria-expanded', 'true');
+    mm.hidden = false; menuBtn.setAttribute('aria-expanded', 'true'); document.documentElement.classList.add('has-overlay');
     outside().forEach(n => { n.inert = true; });
     document.documentElement.style.overflow = 'hidden';
     if (lenis) lenis.stop();
@@ -1378,7 +1541,7 @@
   function closeMenu(then) {
     if (mm.hidden) return;
     const done = () => {
-      mm.hidden = true; menuBtn.setAttribute('aria-expanded', 'false');
+      mm.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); document.documentElement.classList.remove('has-overlay');
       outside().forEach(n => { n.inert = false; });
       document.documentElement.style.overflow = '';
       if (lenis) lenis.start();
@@ -1390,6 +1553,96 @@
     mmTl = gsap.to(mm, { clipPath: `circle(0px at ${cx}px ${cy}px)`, duration: 0.55, ease: 'power3.inOut', onComplete: done });
   }
   menuBtn.addEventListener('click', () => openMenu(menuBtn));
+
+  // ---------- a product, up close ----------
+  // A tap on the product in the centre lifts it out of the shelf onto the night: it grows
+  // from where it sat, its frame draws, its corner sparkles open and the magic bursts from
+  // them. A tap on a product at the side first brings it to the centre. Closing (the
+  // button, the veil, Escape, or a swipe down) sends it back to its place.
+  const zoom = $('#zoom'), zoomStage = $('#zoomStage'), zoomClose = $('#zoomClose');
+  let zoomFrom = null, zoomTl = null;
+  zoomClose.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path class="zc-line" d="M6 6L18 18M18 6L6 18"/></svg>`;
+  const flip = (from, to) => ({ x: from.left + from.width / 2 - (to.left + to.width / 2), y: from.top + from.height / 2 - (to.top + to.height / 2), scale: from.width / to.width });
+  function openZoom(lab) {
+    if (!zoom.hidden || !lab) return;
+    zoomFrom = lab;
+    const card = lab.cloneNode(true);
+    card.removeAttribute('style'); card.removeAttribute('tabindex'); card.removeAttribute('aria-haspopup');
+    card.classList.remove('fit-0', 'fit-1', 'fit-2', 'is-hover', 'is-framed');
+    $$('[style]', card).forEach(n => n.removeAttribute('style'));
+    $$('.label-band', card).forEach(b => b.classList.add('is-lit'));
+    card.classList.add('is-zoomed');
+    zoomStage.replaceChildren(card); zoomStage.scrollTop = 0;
+    zoom.setAttribute('aria-label', ($('.label-name', card) || {}).textContent || '');
+    zoomClose.setAttribute('aria-label', T().menu.close); zoomClose.title = T().menu.close;
+    zoom.hidden = false; document.documentElement.classList.add('has-overlay');
+    outside().forEach(n => { n.inert = true; });
+    document.documentElement.style.overflow = 'hidden';
+    if (lenis) lenis.stop();
+    sfx.starOpen();
+    const rect = $('.label-frame rect', card), corners = $$('.label-corner', card), sheen = $('.label-sheen', card);
+    gsap.set(rect, { strokeDashoffset: 1 }); gsap.set(corners, { scale: 0, opacity: 0 });
+    if (zoomTl) zoomTl.kill();
+    if (reduce) { gsap.set(rect, { strokeDashoffset: 0 }); gsap.set(corners, { scale: 1, opacity: 1 }); }
+    else {
+      const f = flip(lab.getBoundingClientRect(), card.getBoundingClientRect());
+      zoomTl = gsap.timeline()
+        .fromTo('.zoom-veil', { opacity: 0 }, { opacity: 1, duration: 0.55, ease: 'power2.out' }, 0)
+        .fromTo(card, { ...f, transformOrigin: '50% 50%' }, { x: 0, y: 0, scale: 1, duration: 1.0, ease: 'expo.out' }, 0)
+        .fromTo(zoomClose, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.55, ease: 'back.out(2)' }, 0.4)
+        .to(rect, { strokeDashoffset: 0, duration: 1.4, ease: 'power2.inOut' }, 0.35)
+        .fromTo(sheen, { xPercent: -140, opacity: 1 }, { xPercent: 260, duration: 1.6, ease: 'power1.inOut' }, 0.5)
+        .fromTo(corners, { scale: 0, rotation: -45, opacity: 0 }, { scale: 1, rotation: 0, opacity: 1, duration: 0.8, stagger: 0.1, ease: 'back.out(2)' }, 1.0)
+        .add(() => {
+          const r = $('.label-frame', card).getBoundingClientRect();
+          [[r.left, r.top], [r.right, r.top], [r.left, r.bottom], [r.right, r.bottom]].forEach(([x, y]) => spawn(null, x, y, true, 5, { radial: true, speed: 42, spread: 3, life: 0.9, rise: 0 }));
+          sfx.tada();
+        }, 1.1);
+    }
+    zoomClose.focus({ preventScroll: true });
+  }
+  function closeZoom() {
+    if (zoom.hidden) return;
+    const card = $('.label', zoomStage), lab = zoomFrom;
+    const done = () => {
+      zoom.hidden = true; zoomStage.replaceChildren(); document.documentElement.classList.remove('has-overlay');
+      outside().forEach(n => { n.inert = false; });
+      document.documentElement.style.overflow = '';
+      if (lenis) lenis.start();
+      if (lab) lab.focus({ preventScroll: true });
+    };
+    if (zoomTl) zoomTl.kill();
+    if (reduce || !card || !lab) { done(); return; }
+    sfx.land();
+    const f = flip(lab.getBoundingClientRect(), card.getBoundingClientRect());
+    zoomTl = gsap.timeline({ onComplete: done })
+      .to(card, { x: '+=' + f.x, y: '+=' + f.y, scale: f.scale, duration: 0.65, ease: 'power3.inOut' }, 0)
+      .to(['.zoom-veil', zoomClose], { opacity: 0, duration: 0.45, ease: 'power2.in' }, 0.12);
+  }
+  zoomClose.addEventListener('click', closeZoom);
+  $('.zoom-veil', zoom).addEventListener('click', closeZoom);
+  zoomStage.addEventListener('click', e => { if (e.target === zoomStage) closeZoom(); });
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !zoom.hidden) closeZoom(); });
+  {   // a swipe down closes it, when the card is scrolled to its top
+    let y0 = 0;
+    zoomStage.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, { passive: true });
+    zoomStage.addEventListener('touchend', e => { if (e.changedTouches[0].clientY - y0 > 90 && zoomStage.scrollTop <= 0) closeZoom(); }, { passive: true });
+  }
+  // the product in the centre opens; one at the side first comes to the centre
+  const pickLabel = lab => {
+    const labs = $$('#menuTrack .label'), i = labs.indexOf(lab);
+    if (i < 0) return;
+    if (i !== menuActive) goMenu(i); else openZoom(lab);
+  };
+  $('#menuTrack').addEventListener('click', e => {
+    const lab = e.target.closest('.label'); if (!lab || e.target.closest('a, button')) return;
+    pickLabel(lab);
+  });
+  $('#menuTrack').addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const lab = e.target.closest('.label'); if (!lab || e.target !== lab) return;
+    e.preventDefault(); pickLabel(lab);
+  });
   $('.skip-link').addEventListener('click', e => {
     e.preventDefault(); goTo('#story');
     const h = $('#story .h2'); h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true });
@@ -1567,6 +1820,22 @@
     if (!started) return;
     buildRoute();
     ScrollTrigger.refresh();
+    placeArrows();
+  }
+  // a layout that changes after it was measured (late fonts, a browser's text size, an
+  // image) rebuilds the route, so the line always runs where things really are
+  if ('ResizeObserver' in window) {
+    const seen = new Map();
+    const ro = new ResizeObserver(entries => {
+      let moved = false;
+      for (const en of entries) {
+        const w = Math.round(en.contentRect.width), h = Math.round(en.contentRect.height), k = seen.get(en.target);
+        if (k && (Math.abs(k[0] - w) > 1 || Math.abs(k[1] - h) > 1)) moved = true;
+        seen.set(en.target, [w, h]);
+      }
+      if (moved && started) { clearTimeout(rz); rz = setTimeout(rebuild, 260); }
+    });
+    ['#heroWord', '#story .story-text', '#menu .menu-head', '#branchRows', '#collab .container', '#footer .container'].forEach(s => { const n = $(s); if (n) ro.observe(n); });
   }
   $('#langToggle').addEventListener('click', async () => {
     lang = lang === 'fa' ? 'en' : 'fa';

@@ -73,6 +73,7 @@ const CONTENT = {
     // The horizontal menu track. `tone` picks the label colour from the kit palette.
     menu: {
       title: 'هر لیوان، یک ترفند.',
+      prev: 'محصول قبلی', next: 'محصول بعدی', zoom: 'نمایش بزرگ', close: 'بستن',
       lead: 'آنچه پشت بار تادا آماده می‌شود، و آنچه می‌توانید با خود ببرید.',
       items: [
         { tone: 'ube', name: 'اوبه', sub: 'لاته‌ی اوبه', note: 'سیب‌زمینی بنفش فیلیپینی، شیر سرد و یخ؛ خوش‌رنگ‌ترین لیوان تادا.' },
@@ -168,6 +169,7 @@ const CONTENT = {
     },
     menu: {
       title: 'Every glass, a trick.',
+      prev: 'Previous', next: 'Next', zoom: 'View larger', close: 'Close',
       lead: 'What we make behind the Tada bar, and what you can take home.',
       items: [
         { tone: 'ube', name: 'Ube', sub: 'Ube latte', note: 'Filipino purple yam, cold milk and ice; the prettiest glass at Tada.' },

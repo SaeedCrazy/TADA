@@ -16,7 +16,7 @@ from urllib.parse import quote
 ROOT = pathlib.Path(__file__).resolve().parent
 OUT = ROOT / "tada.html"
 MIME = {".woff2": "font/woff2", ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg"}
-SCRIPTS = ("letters-data.js", "letters.js", "art-data.js", "content.js", "sound.js", "main.js")
+SCRIPTS = ("letters-data.js", "letters.js", "art-data.js", "content.js", "sound.js", "loader.js", "main.js")
 
 
 def data_uri(path: pathlib.Path) -> str:

@@ -11,8 +11,11 @@ def page(b, W, H, reduce=False, lang='fa'):
     pg = ctx.new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append('PAGEERROR ' + str(e)[:300]))
     pg.on('console', lambda m: errs.append('CONSOLE ' + m.text[:200]) if m.type == 'error' else None)
-    pg.add_init_script(f"try{{localStorage.setItem('tada.lang','{lang}')}}catch(e){{}}")
-    pg.goto(URL); pg.wait_for_function(READY, timeout=30000); pg.wait_for_timeout(600)
+    pg.add_init_script(f"try{{localStorage.setItem('tada.lang','{lang}');sessionStorage.setItem('tada.intro','1')}}catch(e){{}}")
+    pg.goto(URL)
+    pg.wait_for_function("!document.querySelector('#ldGate') || document.querySelector('#ldGate').classList.contains('is-waiting')", timeout=30000)
+    if pg.query_selector('#ldGate'): pg.mouse.click(W // 2, H // 2)
+    pg.wait_for_function(READY, timeout=40000); pg.wait_for_timeout(900)
     return ctx, pg, errs
 
 

@@ -22,8 +22,8 @@ PIECES = {
     'insta':     (1340, 2940, 3260, 3262),
     'tadaIr':    (4990, 3260, 5770, 3430),
     'sun':       (1265, 1470, 2065, 2245),
-    'kettle':    (150, 2040, 1110, 3070),
-    'espresso':  (100, 3320, 1255, 4140),
+    'kettle':    (150, 2040, 1110, 3112),
+    'espresso':  (100, 3320, 1255, 4160),
     'glass':     (780, 3770, 1070, 4172),
     'grinder':   (470, 4290, 1110, 5625),
     'vine':      (110, 4290, 400, 5460),
@@ -44,15 +44,15 @@ PIECES = {
     'icedCup':   (3590, 4430, 3870, 4810),
     'glass2':    (4140, 4990, 4500, 5370),
     'cookie':    (3860, 4815, 4150, 5075),
-    'teapot':    (5240, 4170, 5880, 5435),
-    'scooter':   (6560, 3830, 7470, 4165),
+    'teapot':    (5240, 4170, 5860, 5435),
+    'scooter':   (6740, 3770, 7400, 4182),
     'palm':      (7340, 3370, 7925, 4115),
     'citrus3':   (6190, 4190, 7610, 4405),
     'cookies':   (4550, 4870, 5230, 5445),
     'pear':      (6140, 4470, 6690, 5130),
     'map':       (6490, 5205, 7865, 5625),
-    'lozenge':   (3530, 3690, 4630, 3965),
-    'dotRow':    (3540, 3955, 4530, 4065),
+    'lozenge':   (3140, 3715, 4865, 3952),
+    'dotRow':    (3130, 3962, 4852, 4052),
     'beans':     (3880, 1520, 4980, 1965),
 }
 
@@ -103,7 +103,10 @@ def inside(r, box, tol=3):
 art = {}
 for name, box in PIECES.items():
     ds = [x for x in DR if inside(x['rect'], box)]
-    if name == 'arch': ds = [x for x in ds if x['rect'].width > 1000]          # the door alone
+    if name == 'arch': ds = [x for x in ds if x['rect'].width > 1000]
+    if name == 'scooter': ds = [x for x in ds if not (x['rect'].y0 > 4160 and x['rect'].height < 2)]   # not the road
+    if name == 'espresso': ds = [x for x in ds if not (x['rect'].width > 700 and x['rect'].height < 2)]  # not the shelf
+    if name == 'cup': ds = [x for x in ds if not (x['rect'].width < 2 and x['rect'].height > 300)]      # not the panel's edge          # the door alone
     if name == 'coffeePath': ds = [x for x in ds if not (x['rect'].y0 > 950 and (x['rect'].width > 600 or x['rect'].x1 < 3300))]   # not the tart below
     if name == 'hand': ds.sort(key=lambda x: x['type'] != 'f')                 # sparkles first, then the hand
     if not ds:
@@ -120,12 +123,45 @@ for name, box in PIECES.items():
         item = [path_d(x, x0, y0), kind(x)]
         if kind(x) == 0 and abs(wf - 1) > 0.02: item.append(wf)
         ps.append(item)
+    if name == 'sun': ps.insert(0, [f'M{f1(1328 - x0)} {f1(1877.6 - y0)}H{f1(2045 - x0)}', 0])
     art[name] = {'vb': [0, 0, round(x1 - x0, 1), round(y1 - y0, 1)], 'at': [round(x0, 1), round(y0, 1)], 'p': ps}
 
-import json as _j
-_old = _j.load(open(r'C:/Users/SAEED/Downloads/TADA/هویت بصری/_work/hand_anim.json', encoding='utf-8'))
-_h = art['hand']; _dx, _dy = 3481.7 - 4 - _h['at'][0], 2103.2 - 3 - _h['at'][1]
-_h['mask'] = {'t': [round(_dx, 1), round(_dy, 1)], 'p': [s['d'] for s in _old['strokes']]}
+import json as _j, re as _re, math as _m
+_old = _j.load(open(ROOT / '_src/old_hand.json', encoding='utf-8'))        # the kit's centerlines of the same mark
+_h = art['hand']; _t = [round(3481.7 - 4 - _h['at'][0], 1), round(2103.2 - 3 - _h['at'][1], 1)]
+def _sample(d):
+    toks = _re.findall(r'[MCL]|-?[\d.]+', d.replace(',', ' ')); pts = []; i = 0; cur = None; cmd = None
+    while i < len(toks):
+        if toks[i] in 'MCL': cmd = toks[i]; i += 1; continue
+        if cmd in 'ML': cur = (float(toks[i]) + _t[0], float(toks[i + 1]) + _t[1]); pts.append(cur); i += 2
+        else:
+            c1 = (float(toks[i]) + _t[0], float(toks[i + 1]) + _t[1]); c2 = (float(toks[i + 2]) + _t[0], float(toks[i + 3]) + _t[1]); e = (float(toks[i + 4]) + _t[0], float(toks[i + 5]) + _t[1]); i += 6
+            for k in range(1, 7):
+                u = k / 6; v = 1 - u
+                pts.append((v**3 * cur[0] + 3 * v * v * u * c1[0] + 3 * v * u * u * c2[0] + u**3 * e[0], v**3 * cur[1] + 3 * v * v * u * c1[1] + 3 * v * u * u * c2[1] + u**3 * e[1]))
+            cur = e
+    return pts
+_lines = {s['id']: _sample(s['d']) for s in _old['strokes']}
+_G = {'outer': 'root', 'thumb': 'thumb', 'thumbtop': 'thumb', 'midtip': 'mid', 'middle_a': 'mid', 'middle_b': 'root', 'ring': 'ring', 'pinky': 'pinky'}
+groups = []
+for i, (d, k, *w) in enumerate(_h['p']):
+    if i < 3: groups.append('star'); continue
+    pts = [(float(a), float(b)) for a, b in _re.findall(r'(-?[\d.]+) (-?[\d.]+)', d)]
+    near = min(((sum(min(_m.hypot(px - qx, py - qy) for qx, qy in L) for px, py in pts) / len(pts), n) for n, L in _lines.items()))[1]
+    ys = [p[1] for p in pts]
+    # one piece of the mark runs the whole middle finger: its tip half turns in the snap, the rest stays
+    groups.append('split' if near in ('middle_a', 'middle_b') and max(ys) - min(ys) > 250 else _G[near])
+_h['groups'] = groups
+_h['line'] = {'t': _t, 'strokes': [{'id': s['id'], 'd': s['d'], 'len': s['len']} for s in _old['strokes']]}
+print('hand groups', groups)
+# the lozenge of the glass as a pattern tile: one circle and its star
+# the lozenge of the glass as a pattern tile: the first circle of the band and its star, centred
+_circle = next(x for x in DR if inside(x['rect'], (3150, 3720, 3372, 3946)) and x['rect'].width > 200)
+_star = next(x for x in DR if inside(x['rect'], (3180, 3750, 3340, 3915)) and x['rect'].width < 160)
+_cx, _cy = (_circle['rect'].x0 + _circle['rect'].x1) / 2, (_circle['rect'].y0 + _circle['rect'].y1) / 2
+_S = 212.5
+art['tile'] = {'s': _S, 'p': [path_d(_circle, _cx - _S / 2, _cy - _S / 2), path_d(_star, _cx - _S / 2, _cy - _S / 2)]}
+print('tile', art['tile']['p'][0][:60])
 
 js = ('// The Tada glass: pieces of the designer\'s mural (outside glass tada big one1.ai), as drawn.\n'
       '// Generated by _src/build_art.py. p = [d, kind (0 stroke, 1 fill), width factor?]; at = place on the glass.\n'
@@ -133,13 +169,15 @@ js = ('// The Tada glass: pieces of the designer\'s mural (outside glass tada bi
 (ROOT / 'js').mkdir(exist_ok=True)
 (ROOT / 'js/art-data.js').write_text(js, encoding='utf-8')
 print('pieces', len(art), 'bytes', len(js.encode()))
-for n, a in art.items():
+for n, a in ((k, v) for k, v in art.items() if "vb" in v):
     print(f'  {n:14s} paths {len(a["p"]):4d}  size {a["vb"][2]:.0f}x{a["vb"][3]:.0f}  bytes {len(json.dumps(a)):6d}')
 
 # the whole glass, one file, for the ending
 W, H = page.rect.width, page.rect.height
 parts = []
+HAND_BOX = PIECES['hand']
 for x in DR:
+    if inside(x['rect'], HAND_BOX): continue
     d = path_d(x, 0, 0)
     if kind(x): parts.append(f'<path d="{d}"/>' if x['type'] == 'f' else f'<path class="s" d="{d}"/>')
     else:
@@ -151,5 +189,9 @@ svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {f1(W)} {f1(H)}">'
 (ROOT / 'assets/art').mkdir(parents=True, exist_ok=True)
 (ROOT / 'assets/art/mural.svg').write_text(svg, encoding='utf-8')
 print('mural.svg bytes', len(svg.encode()), 'paths', len(parts))
+js = ("// The Tada glass: pieces of the designer's mural (outside glass tada big one1.ai), as drawn.\n"
+      '// Generated by _src/build_art.py. p = [d, kind (0 stroke, 1 fill), width factor?]; at = place on the glass.\n'
+      'const TADA_ART = ' + json.dumps(art, ensure_ascii=False, separators=(',', ':')) + ';\n')
+(ROOT / 'js/art-data.js').write_text(js, encoding='utf-8')
 import runpy
 runpy.run_path(str(ROOT / '_src/mural_text.py'), run_name='__main__')   # the glass's one live word

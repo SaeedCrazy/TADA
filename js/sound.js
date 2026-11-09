@@ -112,7 +112,39 @@
     notes.forEach((n, i) => tone(note(n), 0.35, { type, gain, delay: i * gap, reverb: true }));
   }
 
+  // The sound of the line: a soft nib on paper. One looping voice of filtered noise
+  // whose loudness follows how fast the line is being drawn (0 = still).
+  let inkV = null;
+  function inkVoice() {
+    const c = engine(); if (!c || !noise) return null;
+    if (inkV) return inkV;
+    const src = c.createBufferSource(); src.buffer = noise; src.loop = true;
+    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1400;
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 0.85;
+    const g = c.createGain(); g.gain.value = 0;
+    // the fibres of the paper under the nib: the band trembles a little
+    const lfo = c.createOscillator(); lfo.frequency.value = 7.3;
+    const depth = c.createGain(); depth.gain.value = 480;
+    lfo.connect(depth).connect(bp.frequency); lfo.start();
+    src.connect(hp).connect(bp).connect(g); g.connect(master);
+    src.start();
+    inkV = { c, g, bp };
+    return inkV;
+  }
+  let inkLevel = 0;
+
   const sfx = {
+    // the line being drawn: level 0..1, called as often as it changes
+    ink(level) {
+      level = Math.max(0, Math.min(1, level || 0));
+      if (Math.abs(level - inkLevel) < 0.02) return;
+      inkLevel = level;
+      if (!level && !inkV) return;
+      const v = inkVoice(); if (!v) return;
+      const t = v.c.currentTime;
+      v.g.gain.setTargetAtTime(level * 0.03, t, level ? 0.05 : 0.12);
+      v.bp.frequency.setTargetAtTime(2600 + level * 1500, t, 0.1);
+    },
     // UI
     hover() { if (every('hover', 45)) tone(2300 + Math.random() * 200, 0.03, { gain: 0.007 }); },
     tap() { if (every('tap', 30)) { tone(1400, 0.045, { type: 'triangle', gain: 0.03, slideTo: 950 }); air(0.02, { gain: 0.01, from: 5000, to: 4000 }); } },
@@ -208,6 +240,8 @@
     document.addEventListener('keydown', unlock, { passive: true, once: true });
     document.addEventListener('touchend', unlock, { passive: true });   // iOS opens audio here
     document.addEventListener('click', unlock, { passive: true });
+    // a hidden tab never keeps a pen scratching
+    document.addEventListener('visibilitychange', () => { if (document.hidden) sfx.ink(0); });
   }
 
   window.TadaSound = { enabled: () => wanted, setEnabled, toggle: () => setEnabled(!wanted), unlock, probe, onFirstSound, sfx, bind, onChange: fn => listeners.add(fn) };

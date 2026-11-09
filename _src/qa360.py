@@ -3,9 +3,13 @@ O = r'C:/Users/SAEED/AppData/Local/Temp/claude/29abb69cf93759cc/2d2b5d55-f9ae-46
 with sync_playwright() as p:
     b = p.chromium.launch(); ctx = b.new_context(viewport={'width': 360, 'height': 740}, is_mobile=True, has_touch=True); pg = ctx.new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e)))
-    pg.goto('http://127.0.0.1:8090/'); pg.wait_for_function('window.__tada && window.__tada.chains.length > 5', timeout=30000); pg.wait_for_timeout(500)
+    pg.add_init_script("sessionStorage.setItem('tada.intro','1')")
+    pg.goto('http://127.0.0.1:8090/')
+    pg.wait_for_function("!document.querySelector('#ldGate') || document.querySelector('#ldGate').classList.contains('is-waiting')", timeout=30000)
+    if pg.query_selector('#ldGate'): pg.tap('#ldGate')
+    pg.wait_for_function('window.__tada && window.__tada.chains.length > 5', timeout=40000); pg.wait_for_timeout(900)
     # every written headline and every art fits inside the screen
-    print(pg.evaluate("""[...document.querySelectorAll('svg.tt, svg.art, .btn, .card, .step, .hours-card')].filter(e => !e.closest('#menuTrack')).map(e => { const r = e.getBoundingClientRect(); return [e.closest('[id]').id + ' ' + (e.getAttribute('class')||''), Math.round(r.left), Math.round(r.right)]; }).filter(a => a[1] < 0 || a[2] > 360)"""))
+    print(pg.evaluate("""[...document.querySelectorAll('svg.tt, svg.art, .btn, .card, .row, .hours-card')].filter(e => !e.closest('#menuTrack')).map(e => { const r = e.getBoundingClientRect(); return [e.closest('[id]').id + ' ' + (e.getAttribute('class')||''), Math.round(r.left), Math.round(r.right)]; }).filter(a => a[1] < 0 || a[2] > 360)"""))
     pg.tap('#menuBtn'); pg.wait_for_timeout(800)
     print('menu open', pg.evaluate("!document.querySelector('#mMenu').hidden"), pg.evaluate("document.activeElement.className"))
     pg.screenshot(path=O + 'menu.png')

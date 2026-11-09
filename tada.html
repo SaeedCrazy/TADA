@@ -47,13 +47,14 @@
   --pad: clamp(22px, 5vw, 64px);
   --wide: 1240px;
   --gap: clamp(120px, 17vh, 210px);
-  --ink-w: 2px;            /* the one line: the magic, the illustrations, the frames */
+  --ink-w: 3px;            /* the travelling line (set to the door's own line weight) */
+  --art-w: 2px;            /* the illustrations of the glass */
   --nav-h: 72px;
   --ease: cubic-bezier(.22, .61, .21, 1);
   --sky: clamp(260px, 56vh, 640px);
 }
 @supports (height: 1svh) { :root { --sky: clamp(260px, 56svh, 640px); } }
-@media (max-width: 767px) { :root { --ink-w: 1.6px; --nav-h: 60px; } }
+@media (max-width: 767px) { :root { --ink-w: 2.2px; --art-w: 1.6px; --nav-h: 60px; } }
 
 [data-surface="night"] { --bg: var(--night); --fg: var(--cream); --soft: var(--haze); --ink: var(--cream); --art: var(--cream); --line-soft: rgba(246, 240, 248, .22); }
 [data-surface="day"]   { --bg: var(--lilac); --fg: var(--plum); --soft: rgba(53, 8, 76, .74); --ink: var(--tada); --art: var(--tada); --line-soft: rgba(102, 36, 130, .22); }
@@ -300,15 +301,21 @@ html[dir="ltr"] .art-kettle { justify-self: start; }
 html[lang="en"] .card-name .tt { display: none; }
 .card-sub { margin: 4px 0 8px; color: var(--soft); font-size: 15px; }
 .card-note { margin: 0; font-size: 16.5px; line-height: 1.95; }
-.card-arrow { position: absolute; top: 50%; width: 44px; height: 64px; margin-top: -32px; display: grid; place-items: center; border: 0; background: none; cursor: pointer; color: var(--ink); opacity: 0; transition: opacity .5s var(--ease); }
-.card.is-front .card-arrow { opacity: .42; }
-.card.is-front .card-arrow:hover, .card.is-front .card-arrow:focus-visible { opacity: .9; }
+/* < and >: faint, on the flavor itself, each at its own edge pointing outward (as before) */
+.card-arrow { position: absolute; top: 50%; z-index: 3; width: 44px; height: 64px; margin-top: -32px; padding: 0; border: 0; background: none;
+  color: var(--ink); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .7s var(--ease); }
+.card-arrow.is-prev { inset-inline-start: 2px; }
+.card-arrow.is-next { inset-inline-end: 2px; }
+.card-arrow svg { display: block; width: 22px; height: 22px; margin: auto; overflow: visible; transition: transform .5s var(--ease); }
+.card-arrow path { fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.card.is-front .card-arrow { opacity: .42; pointer-events: auto; }
+.card.is-front .card-arrow:hover, .card.is-front .card-arrow:focus-visible { opacity: .95; }
+.card-arrow.is-prev:hover svg { transform: translateX(calc(-3px * var(--dir-x, 1))); }
+.card-arrow.is-next:hover svg { transform: translateX(calc(3px * var(--dir-x, 1))); }
+[dir="rtl"] .card-arrow { --dir-x: -1; }
+.card-arrow:active svg { transform: scale(.86); }
 .card-arrow[hidden] { display: none; }
-.card-arrow svg { width: 14px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.4; }
-.card-arrow.is-next { inset-inline-start: -22px; }
-.card-arrow.is-prev { inset-inline-end: -22px; }
-html[dir="rtl"] .card-arrow.is-next svg { transform: scaleX(-1); }
-html[dir="ltr"] .card-arrow.is-prev svg { transform: scaleX(-1); }
+.card-arrow:focus-visible { outline: 1px solid currentColor; outline-offset: -6px; border-radius: 8px; }
 .menu-dots { display: flex; justify-content: center; gap: 14px; margin-top: clamp(22px, 4vh, 40px); }
 .menu-dots i { width: 9px; height: 9px; background: var(--ink); opacity: .25; transition: opacity .6s var(--ease), transform .6s var(--ease);
   -webkit-mask: var(--star-mask) center / contain no-repeat; mask: var(--star-mask) center / contain no-repeat; }
@@ -317,7 +324,6 @@ html[dir="ltr"] .card-arrow.is-prev svg { transform: scaleX(-1); }
   .card { padding: 26px 22px 24px; --c: 20px; }
   .card-art { height: clamp(100px, 18vh, 150px); }
   .card-name .tt { height: 44px; }
-  .card-arrow { width: 40px; }
 }
 
 /* ---------- order: the road ---------- */
@@ -763,6 +769,35 @@ const TadaType = (() => {
   const joinsNext = ch => DUAL.has(ch);
   const joinsPrev = ch => DUAL.has(ch) || RIGHT.has(ch);
 
+  // Each joining form on the sheet carries its own connector on the baseline, drawn at full
+  // length for the specimen. Set end to end, two connectors make a double gap between
+  // letters; joined, they lie over one another, as a pen writes them: one stroke between.
+  // lc / rc: the length of the baseline run leaving the glyph's left / right edge.
+  const OVER = 0.9;
+  function stubs(g) {
+    if (g.__st) return g.__st;
+    let lc = 0, rc = 0;
+    for (const d of g.p) {
+      const n = d.match(/[MLHVC]|-?[\d.]+/g); let c = '', x = 0, y = 0;
+      for (let i = 0; i < n.length;) {
+        if (/[MLHVC]/.test(n[i])) { c = n[i++]; continue; }
+        const x0 = x, y0 = y;
+        if (c === 'H') x = +n[i++];
+        else if (c === 'V') y = +n[i++];
+        else if (c === 'C') { x = +n[i + 4]; y = +n[i + 5]; i += 6; }
+        else { x = +n[i]; y = +n[i + 1]; i += 2; }
+        if (c === 'M') continue;
+        // on the baseline (a few letters, like the final ه, sit their connector a hair below it)
+        if (Math.abs(y0 - y) < 0.5 && Math.abs(y) < 14 && Math.abs(x - x0) > 1) {
+          const a = Math.min(x0, x), b = Math.max(x0, x);
+          if (a < 1.5) lc = Math.max(lc, b);
+          if (b > g.w - 1.5) rc = Math.max(rc, g.w - a);
+        }
+      }
+    }
+    return (g.__st = { lc: Math.min(lc, g.w), rc: Math.min(rc, g.w) });
+  }
+
   function form(ch, prevJ, nextJ) {
     if (DIGIT.test(ch)) return G[ch + '.d'] ? ch + '.d' : null;
     if (ch === 'ـ') return 'ـ';
@@ -780,7 +815,7 @@ const TadaType = (() => {
     const kash = o.kashida ?? KASHIDA, gap = o.gap ?? GAP, word = o.word ?? WORD;
     const s = [...String(text).normalize('NFC').replace(MARKS, '')].map(c => NORM[c] || c);
     const out = [];
-    let x = 0, prevLeftJoin = false, lastLeft = 0;
+    let x = 0, prevLeftJoin = false, lastLeft = 0, prevStub = 0;
     let i = 0;
     while (i < s.length) {
       const ch = s[i];
@@ -798,7 +833,7 @@ const TadaType = (() => {
         lastLeft = cx + gap * 0.9; x = lastLeft; prevLeftJoin = false; i = j; continue;
       }
       if (ch === 'ـ') {                         // stretch the join
-        if (prevLeftJoin) { out.push({ name: 'ـ', line: kash, x: lastLeft - kash }); lastLeft -= kash; }
+        if (prevLeftJoin) { out.push({ name: 'ـ', line: kash, x: lastLeft - kash }); lastLeft -= kash; prevStub = 0; }
         i++; continue;
       }
       const prev = (() => { for (let j = i - 1; j >= 0; j--) { if (s[j] !== 'ـ') return s[j]; } return ''; })();
@@ -809,11 +844,13 @@ const TadaType = (() => {
       if (!name) { i++; continue; }
       const g = G[name];
       let gx;
-      if (pj) gx = lastLeft - (ch in STEM ? STEM[ch] : g.w);
+      // joined: this letter's connector lies over the previous one's (one stroke between)
+      if (pj) gx = lastLeft - (ch in STEM ? STEM[ch] : g.w) + (ch in STEM ? 0 : Math.min(prevStub, stubs(g).rc) * OVER);
       else gx = (out.length ? x - gap : 0) - g.w;
       out.push({ name, g, x: gx });
       lastLeft = gx; x = gx;
       prevLeftJoin = nj;
+      prevStub = nj ? stubs(g).lc : 0;
       i++;
     }
     let min = Infinity, max = -Infinity, top = Infinity, bot = -Infinity;
@@ -1259,14 +1296,16 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
     const c = engine(); if (!c || !noise) return null;
     if (inkV) return inkV;
     const src = c.createBufferSource(); src.buffer = noise; src.loop = true;
-    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1400;
-    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 0.85;
+    // soft and low: a felt nib on thick paper, never a hiss
+    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 700;
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1700; bp.Q.value = 0.6;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
     const g = c.createGain(); g.gain.value = 0;
     // the fibres of the paper under the nib: the band trembles a little
-    const lfo = c.createOscillator(); lfo.frequency.value = 7.3;
-    const depth = c.createGain(); depth.gain.value = 480;
+    const lfo = c.createOscillator(); lfo.frequency.value = 5.1;
+    const depth = c.createGain(); depth.gain.value = 220;
     lfo.connect(depth).connect(bp.frequency); lfo.start();
-    src.connect(hp).connect(bp).connect(g); g.connect(master);
+    src.connect(hp).connect(bp).connect(lp).connect(g); g.connect(master);
     src.start();
     inkV = { c, g, bp };
     return inkV;
@@ -1282,8 +1321,8 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       if (!level && !inkV) return;
       const v = inkVoice(); if (!v) return;
       const t = v.c.currentTime;
-      v.g.gain.setTargetAtTime(level * 0.03, t, level ? 0.05 : 0.12);
-      v.bp.frequency.setTargetAtTime(2600 + level * 1500, t, 0.1);
+      v.g.gain.setTargetAtTime(level * 0.011, t, level ? 0.12 : 0.18);
+      v.bp.frequency.setTargetAtTime(1500 + level * 500, t, 0.15);
     },
     // UI
     hover() { if (every('hover', 45)) tone(2300 + Math.random() * 200, 0.03, { gain: 0.007 }); },
@@ -1293,7 +1332,7 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
     enable() { arp([7, 12], { gap: 0.08, gain: 0.035, type: 'sine' }); },
     // Brand moments
     introDraw() { air(1.1, { gain: 0.01, from: 4000, to: 8000, reverb: true }); tone(220, 1.2, { gain: 0.025, slideTo: 440, attack: 0.3, reverb: true }); },
-    pen() { if (every('pen', 90)) air(0.08, { gain: 0.006, from: 3000 + Math.random() * 1500, to: 6000, q: 1.2 }); },
+    pen() { if (every('pen', 140)) air(0.09, { gain: 0.0035, from: 1300 + Math.random() * 500, to: 2300, q: 0.8 }); },
     snap() {
       tone(120, 0.2, { gain: 0.14, slideTo: 55 });                        // the thump of the palm
       air(0.07, { gain: 0.07, from: 2600, to: 700, q: 0.5 });              // the crack
@@ -1821,7 +1860,7 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
     svg.__art = { name, paths, strokes: paths.filter(p => p.classList.contains('s')), fills: paths.filter(p => p.classList.contains('f')), w: a.vb[2], drawn: false };
     return svg;
   }
-  function inkPx() { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ink-w')) || 2; }
+  function inkPx() { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--art-w')) || 2; }
   function fitArt(svg) {
     const A = svg.__art; if (!A || !A.w) return;
     const w = svg.getBoundingClientRect().width; if (!w) return;
@@ -2235,6 +2274,7 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
         x = end[0]; y = end[1]; return api;
       },
       stroke(parts, budget, end) { push(parts, budget); x = end[0]; y = end[1]; return api; },
+      lineTo(pt, budget) { const p = mk(`M${x} ${y}L${pt[0]} ${pt[1]}`); push([part(p)], budget ?? p.getTotalLength()); x = pt[0]; y = pt[1]; return api; },
       to(y2, budget, extra) { return api.line(Math.abs(y2 - y), budget, extra); },
       toX(x2, budget, extra) { return api.line(Math.abs(x2 - x), budget, extra); },
     };
@@ -2313,10 +2353,10 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
     return tw;
   }
   const READ = 0.62;   // the head rides at this height of the screen
-  const chainRange = (c, y0 = 0) => {
-    const total = c.links.reduce((s, l) => s + l.budget, 0);
-    return { start: () => `top+=${Math.round(y0)} ${Math.round(READ * 100)}%`, end: () => `+=${Math.round(total)}` };
-  };
+  // Each part's line owns exactly its part's stretch of scroll (its top to its bottom at the
+  // reading height), so one part's line has always finished when the next one starts: no
+  // part is ever pushed to its end in one jump.
+  const chainRange = () => ({ start: () => `top ${Math.round(READ * 100)}%`, end: () => `bottom ${Math.round(READ * 100)}%` });
   function sizeSvg(svg, w, h) {
     svg.setAttribute('width', w); svg.setAttribute('height', h);
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
@@ -2384,7 +2424,8 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
   function tick() {
     const now = performance.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
     if (siteReady) checkCards();
-    let level = inking > 0 ? 0.7 : 0;
+    // the pen is heard only while it draws a piece of the glass; the travelling line is silent
+    const level = inking > 0 ? 0.6 : 0;
     if (siteReady && !reduce) {
       if ((zoneT += dt) > 0.25) { zoneT = 0; zoneRects(); }
       const fr = parked ? null : frontier();
@@ -2394,7 +2435,6 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
         if (headState.px != null && headState.lastEl === fr.at.el) { const d = Math.hypot(sp.lx - headState.px, sp.ly - headState.py) * sp.s; headState.v = headState.v * 0.8 + (d / Math.max(dt, 0.008)) * 0.2; }
         else headState.v *= 0.8;
         headState.px = sp.lx; headState.py = sp.ly;
-        level = Math.max(level, Math.min(1, headState.v / 520));
         headState.x = sp.x; headState.y = sp.y;
         magic.style.transform = `translate3d(${sp.x.toFixed(1)}px, ${sp.y.toFixed(1)}px, 0)`;
         const c = fr.chain;
@@ -2625,9 +2665,11 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       sizeSvg(svg, hr.width, hr.height);
       const p = door.arch, L = p.getTotalLength(), end = p.getPointAtLength(L), m = p.getScreenCTM();
       const fx = m.a * end.x + m.c * end.y + m.e - hr.left, fy = m.b * end.x + m.d * end.y + m.f - hr.top;
+      // one line, one weight, all the way: the page's line is the door's own line
       const doorW = 9.85 * Math.hypot(m.a, m.b), ex = E - hr.left;
+      document.documentElement.style.setProperty('--ink-w', doorW.toFixed(2) + 'px');
       const pen = makePen(svg, fx, fy, 'F', sgn);
-      if (Math.abs(ex - fx) > R0 * 2 + 4) { pen.toX(ex - sgn * R0); svg.lastChild.style.strokeWidth = doorW.toFixed(2) + 'px'; pen.turn('S'); }
+      if (Math.abs(ex - fx) > R0 * 2 + 4) { pen.toX(ex - sgn * R0); pen.turn('S'); }
       else pen.turn('S', undefined, 0);
       pen.to(hr.height);
       const c = addChain('hero', host, pen);
@@ -2657,15 +2699,13 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       sizeSvg(svg, hr.width, hr.height);
       const pen = makePen(svg, E - hr.left, 0, 'S', sgn);
       const h2 = $('.tt-h', host), path = $('.art-path svg', host), esp = $('.art-espresso svg', host), pack = $('#pack');
-      const sweep = Math.min(hr.height * 0.4, Math.max(220, Math.abs(S - E) * 0.32));
-      const packB = rel(pack.getBoundingClientRect(), hr).b;
+      const packB = rel(pack.getBoundingClientRect(), hr).b, yCross = Math.max(packB + 30, hr.height - Math.max(90, $('#bar').offsetHeight * 0.06));
       stations(pen, [
         [rel(h2.getBoundingClientRect(), hr).y, () => writeHeadline(h2)],
         [rel(path.getBoundingClientRect(), hr).y + 10, () => drawArt(path, { max: 3.6 })],
         [rel(esp.getBoundingClientRect(), hr).y + 10, () => drawArt(esp)],
-      ], Math.max(packB + 20, hr.height - sweep));
-      const y0 = pen.y, y1 = hr.height, k = (y1 - y0) * 0.6, xs = S - hr.left;
-      pen.cubic([pen.x, y0 + k], [xs, y1 - k], [xs, y1], undefined, 'S');
+      ], yCross - R0);
+      cross(pen, S - hr.left, hr.height, sgn);
       const c = addChain('bar', host, pen);
       const rr = chainRange(c); lineTrigger(c, { start: rr.start, end: rr.end });
     }
@@ -2744,7 +2784,8 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       const ex = makePen(svg, xf - hr.left, shelfY + R0, 'S', sgn);
       ex.line(hr.height - (shelfY + R0), 0.4 * H);
       const c = addChain('menu', host, { links: [...enter.links, ...pen.links, ...ex.links] });
-      lineTrigger(c, { start: () => (menuPin ? menuPin.start : 0) - 0.6 * vh(), end: () => (menuPin ? menuPin.end : 0) + 0.4 * vh() });
+      // exactly the menu's own stretch of scroll: from its top at reading height to its bottom there
+      lineTrigger(c, { start: () => (menuPin ? menuPin.start : 0) - READ * vh(), end: () => (menuPin ? menuPin.end : 0) + host.offsetHeight - READ * vh() });
     }
 
     // ---------------- evening: dusk, the magician's hat ----------------
@@ -2770,7 +2811,7 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       let hr = host.getBoundingClientRect();
       const lis = $$('#branchRows li');
       const hoursB = rel($('.rows-hours', host).getBoundingClientRect(), hr).b;
-      const want = Math.abs(S - E) * 0.3 + 60, room = hr.height - hoursB;
+      const want = 110, room = hr.height - hoursB;
       if (room < want) { host.style.paddingBottom = `calc(var(--gap) + ${Math.ceil(want - room)}px)`; hr = host.getBoundingClientRect(); }
       sizeSvg(svg, hr.width, hr.height);
       const pen = makePen(svg, E - hr.left, 0, 'S', sgn);
@@ -2782,9 +2823,9 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
         pen.to(Math.max(pen.y + 2, row.y + row.h / 2 - beadR()));
         pen.station(on => { li.classList.toggle('is-reached', on); if (on) { drawArt($('svg.art', li), { max: 1.6 }); sound('tile', i + 2); } });
       });
-      const y0 = Math.max(pen.y + 20, hoursB + 24), y1 = hr.height, k = (y1 - y0) * 0.62, xs = S - hr.left;
-      pen.to(y0);
-      pen.cubic([pen.x, y0 + k], [xs, y1 - k], [xs, y1], undefined, 'S');
+      // below the hours, straight across to the start side
+      pen.to(Math.max(pen.y + 4, hoursB + 30));
+      cross(pen, S - hr.left, hr.height, sgn);
       const c = addChain('branches', host, pen);
       const rr = chainRange(c); lineTrigger(c, { start: rr.start, end: rr.end });
     }
@@ -2803,16 +2844,22 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       const span = Math.abs((E - hr.left) - sgn * R0 - pen.x);
       const sw = scooter.offsetWidth, roadW = road.offsetWidth, palmW = $('.art-palm', road).offsetWidth;
       const drive = Math.max(0, roadW - sw - palmW - 30);
-      pen.line(span, Math.max(280, span * 0.6), {
+      // the ride: the page holds still while the scroll drives the scooter along the road
+      const ride = Math.round(Math.max(small() ? 320 : 420, span * 0.85));
+      if (!reduce) {
+        const st = ScrollTrigger.create({ trigger: road, start: () => `bottom ${Math.round(READ * 100)}%`, end: () => `+=${ride}`, pin: host, pinSpacing: true, invalidateOnRefresh: true, anticipatePin: 1 });
+        triggers.push({ scrollTrigger: st, kill: () => {} });
+      }
+      pen.line(span, ride, {
         onProgress: f => {
           if (f > 0.01) drawArt($('svg.art', scooter), { max: 1.6 });
           if (f > 0.6) drawArt(palm, { max: 1.8 });
-          gsap.set(scooter, { x: sgn * drive * Math.min(1, f * 1.05) });
+          gsap.set(scooter, { x: sgn * drive * Math.min(1, f) });
         },
       });
       pen.turn('S').to(hr.height);
       const c = addChain('order', host, pen);
-      const rr = chainRange(c); lineTrigger(c, { start: rr.start, end: rr.end });
+      lineTrigger(c, { start: () => `top ${Math.round(READ * 100)}%`, end: () => `+=${Math.round(host.offsetHeight + ride)}` });
     }
 
     // ---------------- collab ----------------
@@ -2863,11 +2910,7 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       pen.turn('S');
       const yDown = Math.max(pen.y + 10, box.y - box.h * 0.12);
       pen.to(yDown);
-      const g0 = guide[order[0][0]], L0 = first.L;
-      const q1 = g0.getPointAtLength(order[0][1] ? L0 : 0), q2 = g0.getPointAtLength(order[0][1] ? L0 - 6 : 6);
-      const tx = q2.x - q1.x, ty = q2.y - q1.y, tl = Math.hypot(tx, ty) || 1;
-      const reach = Math.max(30, Math.min(90, box.h * 0.3));
-      pen.cubic([pen.x, yDown + (Ept[1] - yDown) * 0.55], [Ept[0] - (tx / tl) * reach, Ept[1] - (ty / tl) * reach], Ept);
+      pen.lineTo(Ept);   // straight to where the hand begins
       const scale = 0.5;   // scroll px per screen px of the hand's ink
       order.forEach(([id, rev], i) => {
         const e = ends(id);
@@ -2905,6 +2948,14 @@ const faDigits = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
       pen.to(at);
       pen.station(on => on && fn());
     }
+    pen.to(bottom);
+  }
+  // the line goes straight across to the other side: a rounded corner, a level run, a corner, down
+  function cross(pen, x2, bottom, sgn) {
+    const dir = Math.sign(x2 - pen.x) || 1;
+    pen.turn(dir === sgn ? 'F' : 'B');
+    pen.toX(x2 - dir * R0);
+    pen.turn('S');
     pen.to(bottom);
   }
   function sound(name, arg) { if (siteReady && !quiet && sfx[name]) sfx[name](arg); }

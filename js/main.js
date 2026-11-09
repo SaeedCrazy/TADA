@@ -69,7 +69,7 @@
     svg.__art = { name, paths, strokes: paths.filter(p => p.classList.contains('s')), fills: paths.filter(p => p.classList.contains('f')), w: a.vb[2], drawn: false };
     return svg;
   }
-  function inkPx() { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ink-w')) || 2; }
+  function inkPx() { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--art-w')) || 2; }
   function fitArt(svg) {
     const A = svg.__art; if (!A || !A.w) return;
     const w = svg.getBoundingClientRect().width; if (!w) return;
@@ -483,6 +483,7 @@
         x = end[0]; y = end[1]; return api;
       },
       stroke(parts, budget, end) { push(parts, budget); x = end[0]; y = end[1]; return api; },
+      lineTo(pt, budget) { const p = mk(`M${x} ${y}L${pt[0]} ${pt[1]}`); push([part(p)], budget ?? p.getTotalLength()); x = pt[0]; y = pt[1]; return api; },
       to(y2, budget, extra) { return api.line(Math.abs(y2 - y), budget, extra); },
       toX(x2, budget, extra) { return api.line(Math.abs(x2 - x), budget, extra); },
     };
@@ -561,10 +562,10 @@
     return tw;
   }
   const READ = 0.62;   // the head rides at this height of the screen
-  const chainRange = (c, y0 = 0) => {
-    const total = c.links.reduce((s, l) => s + l.budget, 0);
-    return { start: () => `top+=${Math.round(y0)} ${Math.round(READ * 100)}%`, end: () => `+=${Math.round(total)}` };
-  };
+  // Each part's line owns exactly its part's stretch of scroll (its top to its bottom at the
+  // reading height), so one part's line has always finished when the next one starts: no
+  // part is ever pushed to its end in one jump.
+  const chainRange = () => ({ start: () => `top ${Math.round(READ * 100)}%`, end: () => `bottom ${Math.round(READ * 100)}%` });
   function sizeSvg(svg, w, h) {
     svg.setAttribute('width', w); svg.setAttribute('height', h);
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
@@ -632,7 +633,8 @@
   function tick() {
     const now = performance.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
     if (siteReady) checkCards();
-    let level = inking > 0 ? 0.7 : 0;
+    // the pen is heard only while it draws a piece of the glass; the travelling line is silent
+    const level = inking > 0 ? 0.6 : 0;
     if (siteReady && !reduce) {
       if ((zoneT += dt) > 0.25) { zoneT = 0; zoneRects(); }
       const fr = parked ? null : frontier();
@@ -642,7 +644,6 @@
         if (headState.px != null && headState.lastEl === fr.at.el) { const d = Math.hypot(sp.lx - headState.px, sp.ly - headState.py) * sp.s; headState.v = headState.v * 0.8 + (d / Math.max(dt, 0.008)) * 0.2; }
         else headState.v *= 0.8;
         headState.px = sp.lx; headState.py = sp.ly;
-        level = Math.max(level, Math.min(1, headState.v / 520));
         headState.x = sp.x; headState.y = sp.y;
         magic.style.transform = `translate3d(${sp.x.toFixed(1)}px, ${sp.y.toFixed(1)}px, 0)`;
         const c = fr.chain;
@@ -873,9 +874,11 @@
       sizeSvg(svg, hr.width, hr.height);
       const p = door.arch, L = p.getTotalLength(), end = p.getPointAtLength(L), m = p.getScreenCTM();
       const fx = m.a * end.x + m.c * end.y + m.e - hr.left, fy = m.b * end.x + m.d * end.y + m.f - hr.top;
+      // one line, one weight, all the way: the page's line is the door's own line
       const doorW = 9.85 * Math.hypot(m.a, m.b), ex = E - hr.left;
+      document.documentElement.style.setProperty('--ink-w', doorW.toFixed(2) + 'px');
       const pen = makePen(svg, fx, fy, 'F', sgn);
-      if (Math.abs(ex - fx) > R0 * 2 + 4) { pen.toX(ex - sgn * R0); svg.lastChild.style.strokeWidth = doorW.toFixed(2) + 'px'; pen.turn('S'); }
+      if (Math.abs(ex - fx) > R0 * 2 + 4) { pen.toX(ex - sgn * R0); pen.turn('S'); }
       else pen.turn('S', undefined, 0);
       pen.to(hr.height);
       const c = addChain('hero', host, pen);
@@ -905,15 +908,13 @@
       sizeSvg(svg, hr.width, hr.height);
       const pen = makePen(svg, E - hr.left, 0, 'S', sgn);
       const h2 = $('.tt-h', host), path = $('.art-path svg', host), esp = $('.art-espresso svg', host), pack = $('#pack');
-      const sweep = Math.min(hr.height * 0.4, Math.max(220, Math.abs(S - E) * 0.32));
-      const packB = rel(pack.getBoundingClientRect(), hr).b;
+      const packB = rel(pack.getBoundingClientRect(), hr).b, yCross = Math.max(packB + 30, hr.height - Math.max(90, $('#bar').offsetHeight * 0.06));
       stations(pen, [
         [rel(h2.getBoundingClientRect(), hr).y, () => writeHeadline(h2)],
         [rel(path.getBoundingClientRect(), hr).y + 10, () => drawArt(path, { max: 3.6 })],
         [rel(esp.getBoundingClientRect(), hr).y + 10, () => drawArt(esp)],
-      ], Math.max(packB + 20, hr.height - sweep));
-      const y0 = pen.y, y1 = hr.height, k = (y1 - y0) * 0.6, xs = S - hr.left;
-      pen.cubic([pen.x, y0 + k], [xs, y1 - k], [xs, y1], undefined, 'S');
+      ], yCross - R0);
+      cross(pen, S - hr.left, hr.height, sgn);
       const c = addChain('bar', host, pen);
       const rr = chainRange(c); lineTrigger(c, { start: rr.start, end: rr.end });
     }
@@ -992,7 +993,8 @@
       const ex = makePen(svg, xf - hr.left, shelfY + R0, 'S', sgn);
       ex.line(hr.height - (shelfY + R0), 0.4 * H);
       const c = addChain('menu', host, { links: [...enter.links, ...pen.links, ...ex.links] });
-      lineTrigger(c, { start: () => (menuPin ? menuPin.start : 0) - 0.6 * vh(), end: () => (menuPin ? menuPin.end : 0) + 0.4 * vh() });
+      // exactly the menu's own stretch of scroll: from its top at reading height to its bottom there
+      lineTrigger(c, { start: () => (menuPin ? menuPin.start : 0) - READ * vh(), end: () => (menuPin ? menuPin.end : 0) + host.offsetHeight - READ * vh() });
     }
 
     // ---------------- evening: dusk, the magician's hat ----------------
@@ -1018,7 +1020,7 @@
       let hr = host.getBoundingClientRect();
       const lis = $$('#branchRows li');
       const hoursB = rel($('.rows-hours', host).getBoundingClientRect(), hr).b;
-      const want = Math.abs(S - E) * 0.3 + 60, room = hr.height - hoursB;
+      const want = 110, room = hr.height - hoursB;
       if (room < want) { host.style.paddingBottom = `calc(var(--gap) + ${Math.ceil(want - room)}px)`; hr = host.getBoundingClientRect(); }
       sizeSvg(svg, hr.width, hr.height);
       const pen = makePen(svg, E - hr.left, 0, 'S', sgn);
@@ -1030,9 +1032,9 @@
         pen.to(Math.max(pen.y + 2, row.y + row.h / 2 - beadR()));
         pen.station(on => { li.classList.toggle('is-reached', on); if (on) { drawArt($('svg.art', li), { max: 1.6 }); sound('tile', i + 2); } });
       });
-      const y0 = Math.max(pen.y + 20, hoursB + 24), y1 = hr.height, k = (y1 - y0) * 0.62, xs = S - hr.left;
-      pen.to(y0);
-      pen.cubic([pen.x, y0 + k], [xs, y1 - k], [xs, y1], undefined, 'S');
+      // below the hours, straight across to the start side
+      pen.to(Math.max(pen.y + 4, hoursB + 30));
+      cross(pen, S - hr.left, hr.height, sgn);
       const c = addChain('branches', host, pen);
       const rr = chainRange(c); lineTrigger(c, { start: rr.start, end: rr.end });
     }
@@ -1051,16 +1053,22 @@
       const span = Math.abs((E - hr.left) - sgn * R0 - pen.x);
       const sw = scooter.offsetWidth, roadW = road.offsetWidth, palmW = $('.art-palm', road).offsetWidth;
       const drive = Math.max(0, roadW - sw - palmW - 30);
-      pen.line(span, Math.max(280, span * 0.6), {
+      // the ride: the page holds still while the scroll drives the scooter along the road
+      const ride = Math.round(Math.max(small() ? 320 : 420, span * 0.85));
+      if (!reduce) {
+        const st = ScrollTrigger.create({ trigger: road, start: () => `bottom ${Math.round(READ * 100)}%`, end: () => `+=${ride}`, pin: host, pinSpacing: true, invalidateOnRefresh: true, anticipatePin: 1 });
+        triggers.push({ scrollTrigger: st, kill: () => {} });
+      }
+      pen.line(span, ride, {
         onProgress: f => {
           if (f > 0.01) drawArt($('svg.art', scooter), { max: 1.6 });
           if (f > 0.6) drawArt(palm, { max: 1.8 });
-          gsap.set(scooter, { x: sgn * drive * Math.min(1, f * 1.05) });
+          gsap.set(scooter, { x: sgn * drive * Math.min(1, f) });
         },
       });
       pen.turn('S').to(hr.height);
       const c = addChain('order', host, pen);
-      const rr = chainRange(c); lineTrigger(c, { start: rr.start, end: rr.end });
+      lineTrigger(c, { start: () => `top ${Math.round(READ * 100)}%`, end: () => `+=${Math.round(host.offsetHeight + ride)}` });
     }
 
     // ---------------- collab ----------------
@@ -1111,11 +1119,7 @@
       pen.turn('S');
       const yDown = Math.max(pen.y + 10, box.y - box.h * 0.12);
       pen.to(yDown);
-      const g0 = guide[order[0][0]], L0 = first.L;
-      const q1 = g0.getPointAtLength(order[0][1] ? L0 : 0), q2 = g0.getPointAtLength(order[0][1] ? L0 - 6 : 6);
-      const tx = q2.x - q1.x, ty = q2.y - q1.y, tl = Math.hypot(tx, ty) || 1;
-      const reach = Math.max(30, Math.min(90, box.h * 0.3));
-      pen.cubic([pen.x, yDown + (Ept[1] - yDown) * 0.55], [Ept[0] - (tx / tl) * reach, Ept[1] - (ty / tl) * reach], Ept);
+      pen.lineTo(Ept);   // straight to where the hand begins
       const scale = 0.5;   // scroll px per screen px of the hand's ink
       order.forEach(([id, rev], i) => {
         const e = ends(id);
@@ -1153,6 +1157,14 @@
       pen.to(at);
       pen.station(on => on && fn());
     }
+    pen.to(bottom);
+  }
+  // the line goes straight across to the other side: a rounded corner, a level run, a corner, down
+  function cross(pen, x2, bottom, sgn) {
+    const dir = Math.sign(x2 - pen.x) || 1;
+    pen.turn(dir === sgn ? 'F' : 'B');
+    pen.toX(x2 - dir * R0);
+    pen.turn('S');
     pen.to(bottom);
   }
   function sound(name, arg) { if (siteReady && !quiet && sfx[name]) sfx[name](arg); }

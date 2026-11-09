@@ -19,6 +19,35 @@ const TadaType = (() => {
   const joinsNext = ch => DUAL.has(ch);
   const joinsPrev = ch => DUAL.has(ch) || RIGHT.has(ch);
 
+  // Each joining form on the sheet carries its own connector on the baseline, drawn at full
+  // length for the specimen. Set end to end, two connectors make a double gap between
+  // letters; joined, they lie over one another, as a pen writes them: one stroke between.
+  // lc / rc: the length of the baseline run leaving the glyph's left / right edge.
+  const OVER = 0.9;
+  function stubs(g) {
+    if (g.__st) return g.__st;
+    let lc = 0, rc = 0;
+    for (const d of g.p) {
+      const n = d.match(/[MLHVC]|-?[\d.]+/g); let c = '', x = 0, y = 0;
+      for (let i = 0; i < n.length;) {
+        if (/[MLHVC]/.test(n[i])) { c = n[i++]; continue; }
+        const x0 = x, y0 = y;
+        if (c === 'H') x = +n[i++];
+        else if (c === 'V') y = +n[i++];
+        else if (c === 'C') { x = +n[i + 4]; y = +n[i + 5]; i += 6; }
+        else { x = +n[i]; y = +n[i + 1]; i += 2; }
+        if (c === 'M') continue;
+        // on the baseline (a few letters, like the final ه, sit their connector a hair below it)
+        if (Math.abs(y0 - y) < 0.5 && Math.abs(y) < 14 && Math.abs(x - x0) > 1) {
+          const a = Math.min(x0, x), b = Math.max(x0, x);
+          if (a < 1.5) lc = Math.max(lc, b);
+          if (b > g.w - 1.5) rc = Math.max(rc, g.w - a);
+        }
+      }
+    }
+    return (g.__st = { lc: Math.min(lc, g.w), rc: Math.min(rc, g.w) });
+  }
+
   function form(ch, prevJ, nextJ) {
     if (DIGIT.test(ch)) return G[ch + '.d'] ? ch + '.d' : null;
     if (ch === 'ـ') return 'ـ';
@@ -36,7 +65,7 @@ const TadaType = (() => {
     const kash = o.kashida ?? KASHIDA, gap = o.gap ?? GAP, word = o.word ?? WORD;
     const s = [...String(text).normalize('NFC').replace(MARKS, '')].map(c => NORM[c] || c);
     const out = [];
-    let x = 0, prevLeftJoin = false, lastLeft = 0;
+    let x = 0, prevLeftJoin = false, lastLeft = 0, prevStub = 0;
     let i = 0;
     while (i < s.length) {
       const ch = s[i];
@@ -54,7 +83,7 @@ const TadaType = (() => {
         lastLeft = cx + gap * 0.9; x = lastLeft; prevLeftJoin = false; i = j; continue;
       }
       if (ch === 'ـ') {                         // stretch the join
-        if (prevLeftJoin) { out.push({ name: 'ـ', line: kash, x: lastLeft - kash }); lastLeft -= kash; }
+        if (prevLeftJoin) { out.push({ name: 'ـ', line: kash, x: lastLeft - kash }); lastLeft -= kash; prevStub = 0; }
         i++; continue;
       }
       const prev = (() => { for (let j = i - 1; j >= 0; j--) { if (s[j] !== 'ـ') return s[j]; } return ''; })();
@@ -65,11 +94,13 @@ const TadaType = (() => {
       if (!name) { i++; continue; }
       const g = G[name];
       let gx;
-      if (pj) gx = lastLeft - (ch in STEM ? STEM[ch] : g.w);
+      // joined: this letter's connector lies over the previous one's (one stroke between)
+      if (pj) gx = lastLeft - (ch in STEM ? STEM[ch] : g.w) + (ch in STEM ? 0 : Math.min(prevStub, stubs(g).rc) * OVER);
       else gx = (out.length ? x - gap : 0) - g.w;
       out.push({ name, g, x: gx });
       lastLeft = gx; x = gx;
       prevLeftJoin = nj;
+      prevStub = nj ? stubs(g).lc : 0;
       i++;
     }
     let min = Infinity, max = -Infinity, top = Infinity, bot = -Infinity;

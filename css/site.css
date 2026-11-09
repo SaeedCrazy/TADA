@@ -23,13 +23,14 @@
   --pad: clamp(22px, 5vw, 64px);
   --wide: 1240px;
   --gap: clamp(120px, 17vh, 210px);
-  --ink-w: 2px;            /* the one line: the magic, the illustrations, the frames */
+  --ink-w: 3px;            /* the travelling line (set to the door's own line weight) */
+  --art-w: 2px;            /* the illustrations of the glass */
   --nav-h: 72px;
   --ease: cubic-bezier(.22, .61, .21, 1);
   --sky: clamp(260px, 56vh, 640px);
 }
 @supports (height: 1svh) { :root { --sky: clamp(260px, 56svh, 640px); } }
-@media (max-width: 767px) { :root { --ink-w: 1.6px; --nav-h: 60px; } }
+@media (max-width: 767px) { :root { --ink-w: 2.2px; --art-w: 1.6px; --nav-h: 60px; } }
 
 [data-surface="night"] { --bg: var(--night); --fg: var(--cream); --soft: var(--haze); --ink: var(--cream); --art: var(--cream); --line-soft: rgba(246, 240, 248, .22); }
 [data-surface="day"]   { --bg: var(--lilac); --fg: var(--plum); --soft: rgba(53, 8, 76, .74); --ink: var(--tada); --art: var(--tada); --line-soft: rgba(102, 36, 130, .22); }
@@ -276,15 +277,21 @@ html[dir="ltr"] .art-kettle { justify-self: start; }
 html[lang="en"] .card-name .tt { display: none; }
 .card-sub { margin: 4px 0 8px; color: var(--soft); font-size: 15px; }
 .card-note { margin: 0; font-size: 16.5px; line-height: 1.95; }
-.card-arrow { position: absolute; top: 50%; width: 44px; height: 64px; margin-top: -32px; display: grid; place-items: center; border: 0; background: none; cursor: pointer; color: var(--ink); opacity: 0; transition: opacity .5s var(--ease); }
-.card.is-front .card-arrow { opacity: .42; }
-.card.is-front .card-arrow:hover, .card.is-front .card-arrow:focus-visible { opacity: .9; }
+/* < and >: faint, on the flavor itself, each at its own edge pointing outward (as before) */
+.card-arrow { position: absolute; top: 50%; z-index: 3; width: 44px; height: 64px; margin-top: -32px; padding: 0; border: 0; background: none;
+  color: var(--ink); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .7s var(--ease); }
+.card-arrow.is-prev { inset-inline-start: 2px; }
+.card-arrow.is-next { inset-inline-end: 2px; }
+.card-arrow svg { display: block; width: 22px; height: 22px; margin: auto; overflow: visible; transition: transform .5s var(--ease); }
+.card-arrow path { fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.card.is-front .card-arrow { opacity: .42; pointer-events: auto; }
+.card.is-front .card-arrow:hover, .card.is-front .card-arrow:focus-visible { opacity: .95; }
+.card-arrow.is-prev:hover svg { transform: translateX(calc(-3px * var(--dir-x, 1))); }
+.card-arrow.is-next:hover svg { transform: translateX(calc(3px * var(--dir-x, 1))); }
+[dir="rtl"] .card-arrow { --dir-x: -1; }
+.card-arrow:active svg { transform: scale(.86); }
 .card-arrow[hidden] { display: none; }
-.card-arrow svg { width: 14px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.4; }
-.card-arrow.is-next { inset-inline-start: -22px; }
-.card-arrow.is-prev { inset-inline-end: -22px; }
-html[dir="rtl"] .card-arrow.is-next svg { transform: scaleX(-1); }
-html[dir="ltr"] .card-arrow.is-prev svg { transform: scaleX(-1); }
+.card-arrow:focus-visible { outline: 1px solid currentColor; outline-offset: -6px; border-radius: 8px; }
 .menu-dots { display: flex; justify-content: center; gap: 14px; margin-top: clamp(22px, 4vh, 40px); }
 .menu-dots i { width: 9px; height: 9px; background: var(--ink); opacity: .25; transition: opacity .6s var(--ease), transform .6s var(--ease);
   -webkit-mask: var(--star-mask) center / contain no-repeat; mask: var(--star-mask) center / contain no-repeat; }
@@ -293,7 +300,6 @@ html[dir="ltr"] .card-arrow.is-prev svg { transform: scaleX(-1); }
   .card { padding: 26px 22px 24px; --c: 20px; }
   .card-art { height: clamp(100px, 18vh, 150px); }
   .card-name .tt { height: 44px; }
-  .card-arrow { width: 40px; }
 }
 
 /* ---------- order: the road ---------- */

@@ -119,14 +119,16 @@
     const c = engine(); if (!c || !noise) return null;
     if (inkV) return inkV;
     const src = c.createBufferSource(); src.buffer = noise; src.loop = true;
-    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1400;
-    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 3200; bp.Q.value = 0.85;
+    // soft and low: a felt nib on thick paper, never a hiss
+    const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 700;
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1700; bp.Q.value = 0.6;
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
     const g = c.createGain(); g.gain.value = 0;
     // the fibres of the paper under the nib: the band trembles a little
-    const lfo = c.createOscillator(); lfo.frequency.value = 7.3;
-    const depth = c.createGain(); depth.gain.value = 480;
+    const lfo = c.createOscillator(); lfo.frequency.value = 5.1;
+    const depth = c.createGain(); depth.gain.value = 220;
     lfo.connect(depth).connect(bp.frequency); lfo.start();
-    src.connect(hp).connect(bp).connect(g); g.connect(master);
+    src.connect(hp).connect(bp).connect(lp).connect(g); g.connect(master);
     src.start();
     inkV = { c, g, bp };
     return inkV;
@@ -142,8 +144,8 @@
       if (!level && !inkV) return;
       const v = inkVoice(); if (!v) return;
       const t = v.c.currentTime;
-      v.g.gain.setTargetAtTime(level * 0.03, t, level ? 0.05 : 0.12);
-      v.bp.frequency.setTargetAtTime(2600 + level * 1500, t, 0.1);
+      v.g.gain.setTargetAtTime(level * 0.011, t, level ? 0.12 : 0.18);
+      v.bp.frequency.setTargetAtTime(1500 + level * 500, t, 0.15);
     },
     // UI
     hover() { if (every('hover', 45)) tone(2300 + Math.random() * 200, 0.03, { gain: 0.007 }); },
@@ -153,7 +155,7 @@
     enable() { arp([7, 12], { gap: 0.08, gain: 0.035, type: 'sine' }); },
     // Brand moments
     introDraw() { air(1.1, { gain: 0.01, from: 4000, to: 8000, reverb: true }); tone(220, 1.2, { gain: 0.025, slideTo: 440, attack: 0.3, reverb: true }); },
-    pen() { if (every('pen', 90)) air(0.08, { gain: 0.006, from: 3000 + Math.random() * 1500, to: 6000, q: 1.2 }); },
+    pen() { if (every('pen', 140)) air(0.09, { gain: 0.0035, from: 1300 + Math.random() * 500, to: 2300, q: 0.8 }); },
     snap() {
       tone(120, 0.2, { gain: 0.14, slideTo: 55 });                        // the thump of the palm
       air(0.07, { gain: 0.07, from: 2600, to: 700, q: 0.5 });              // the crack

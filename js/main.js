@@ -804,8 +804,9 @@
           pen.to(Math.max(pen.y + 2, r.y + 6));
           pen.station(reach(li, i));
         });
-        // then across to the far side in one long, soft sweep
-        const y0 = pen.y + 20, y1 = hr.height, k = (y1 - y0) * 0.6, xe = E - hr.left;
+        // then, below the hours, across to the far side in one long, soft sweep
+        const hb = rel($('.steps-hours', host).getBoundingClientRect(), hr).b;
+        const y0 = Math.max(pen.y + 20, hb + 18), y1 = hr.height, k = (y1 - y0) * 0.6, xe = E - hr.left;
         pen.to(y0);
         pen.cubic([pen.x, y0 + k], [xe, y1 - k], [xe, y1], undefined, 'S');
       }

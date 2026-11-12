@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>تادا لانژ</title>
+<meta name="description" content="تادا لانژ، نُت جادویی طعم: قهوه‌ی تخصصی، ماچا، اوبه، بیکری و کوکی. سه شعبه، صبح ۹ تا ۱۶ و عصر ۱۷ تا ۲۳.">
+<meta name="theme-color" content="#1C0727">
+<!-- preview build: keep search engines out. Remove these two lines when the site goes live on tada.ir. -->
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="googlebot" content="noindex, nofollow, noarchive">
+<link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+<!-- link previews (Telegram, WhatsApp, Instagram DMs): crawlers need an absolute image address -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TADA Lounge">
+<meta property="og:locale" content="fa_IR">
+<meta property="og:title" content="تادا لانژ · نُت جادویی طعم">
+<meta property="og:description" content="قهوه‌ی تخصصی، ماچا، اوبه، بیکری و کوکی. سه شعبه، صبح ۹ تا ۱۶ و عصر ۱۷ تا ۲۳.">
+<meta property="og:image" content="https://tada.ir/assets/brand/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" href="assets/fonts/doran-vf.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/site.css?v=20261109203832">
+</head>
+<body>
+<a class="skip-link" href="#morning" data-t="skipTo">پرش به محتوا</a>
+
+<!-- The entrance and the loader: the star and the bar of light; then one pen draws the mark,
+     writes تادا / TADA, the hand snaps, and the lowest sparkle opens the page. -->
+<div class="loader" id="loader" role="status" aria-label="تادا">
+  <div class="ld-bg"></div>
+  <div class="ld-stage"></div>
+  <div class="ld-word"></div>
+  <div class="ld-gate" id="ldGate">
+    <div class="ld-gate-star" aria-hidden="true"></div>
+    <div class="ld-gate-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="ldGateLabel"><i></i><b aria-hidden="true"></b></div>
+    <p class="ld-gate-label" id="ldGateLabel" data-t="gate.loading">در حال آماده‌سازی…</p>
+  </div>
+  <button class="ld-sound sound-toggle" type="button" aria-pressed="true" data-sfx="none">صدا روشن</button>
+  <button class="ld-skip" type="button" data-t="skip">رد کردن</button>
+</div>
+
+<header class="nav" id="nav" data-ink="night">
+  <a class="nav-mark" id="navMark" href="#top" aria-label="تادا"></a>
+  <nav class="nav-links" aria-label="بخش‌ها">
+    <a href="#morning" data-t="nav.morning">تادا</a>
+    <a href="#menu" data-t="nav.menu">منو</a>
+    <a href="#branches" data-t="nav.branches">شعبه‌ها</a>
+    <a href="#order" data-t="nav.order">سفارش</a>
+  </nav>
+  <div class="nav-tools">
+    <button class="btn btn-quiet sound-toggle" type="button" aria-pressed="true">صدا روشن</button>
+    <button class="btn btn-quiet nav-menu-btn" id="menuBtn" type="button" aria-controls="mMenu" aria-expanded="false" data-t="menuBtn">فهرست</button>
+    <button class="btn btn-quiet lang-toggle" id="langToggle" type="button" lang="en" data-t="langSwitch">EN</button>
+  </div>
+</header>
+
+<!-- Phone index: opens from the nav. The page behind is inert while it is open. -->
+<div class="mmenu" id="mMenu" data-surface="night" role="dialog" aria-modal="true" aria-labelledby="mMenuTitle" hidden>
+  <div class="mmenu-head">
+    <p class="mmenu-title" id="mMenuTitle" data-t="menuBtn">فهرست</p>
+    <button class="btn btn-quiet mmenu-close" type="button" data-t="menuClose">بستن</button>
+  </div>
+  <nav class="mmenu-links" aria-label="بخش‌ها">
+    <a href="#top" data-t="nav.top">آغاز</a>
+    <a href="#morning" data-t="nav.morning">تادا</a>
+    <a href="#menu" data-t="nav.menu">منو</a>
+    <a href="#branches" data-t="nav.branches">شعبه‌ها</a>
+    <a href="#order" data-t="nav.order">سفارش</a>
+    <a href="#collab" data-t="nav.collab">همکاری</a>
+  </nav>
+  <div class="mmenu-tools">
+    <button class="btn sound-toggle" type="button" aria-pressed="true">صدا روشن</button>
+    <button class="btn lang-toggle" type="button" lang="en" data-t="langSwitch">EN</button>
+  </div>
+</div>
+
+<main id="top">
+
+  <!-- The door: the arch from the glass, the snapping hand, the wordmarks. It draws itself
+       while the site loads; its last stroke is where the Tada magic begins. -->
+  <section class="hero" id="hero" data-surface="night">
+    <div class="hero-grid">
+      <div class="hero-side hero-words">
+        <h1 class="hero-tagline">
+          <span class="sr" data-t="hero.tagline">نُت جادویی طعم</span>
+          <span class="art-slot" data-art="tagline" data-art-lang="fa"></span>
+          <span class="en-line" data-t="hero.tagline" aria-hidden="true"></span>
+        </h1>
+        <a class="insta-link" id="heroInsta" href="https://www.instagram.com/tada_lounge/" rel="noopener">
+          <span class="sr" data-t="hero.insta">تادا در اینستاگرام</span>
+          <span class="art-slot" data-art="insta"></span>
+        </a>
+      </div>
+      <div class="hero-door">
+        <div class="door" id="door" role="img" aria-label="تادا، TADA">
+          <div class="door-film" id="doorFilm" hidden></div>
+        </div>
+        <div class="sill" aria-hidden="true">
+          <span class="art-slot" data-art="lozenge"></span>
+          <span class="art-slot" data-art="dotRow"></span>
+        </div>
+      </div>
+      <div class="hero-side hero-hours">
+        <div class="hours-card">
+          <p class="hours-title"><i class="star" aria-hidden="true"></i><span data-t="hero.hoursTitle">ساعت کاری</span></p>
+          <p class="hours-row"><span data-t="hero.morning">صبح ۹ تا ۱۶</span></p>
+          <p class="hours-row"><span data-t="hero.evening">عصر ۱۷ تا ۲۳</span></p>
+          <p class="status" id="openStatus" aria-live="polite"></p>
+          <a class="order-link" href="https://tada.ir" rel="noopener">
+            <span class="order-label"><i class="star" aria-hidden="true"></i><span data-t="hero.order">سفارش آنلاین از وبسایت</span></span>
+            <span class="art-slot" data-art="tadaIr" role="img" aria-label="tada.ir"></span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <p class="hero-cue" data-t="hero.cue" aria-hidden="true">بفرمایید تو</p>
+    <svg class="ink" data-ink="hero" aria-hidden="true"></svg>
+  </section>
+
+  <!-- Morning: the day comes up through the brand's purples. -->
+  <section class="chapter morning" id="morning" data-surface="day">
+    <div class="sky sky-dawn" aria-hidden="true"></div>
+    <div class="container split">
+      <div class="text">
+        <h2 class="tt-h" data-tt="morning.title"></h2>
+        <p class="lead" data-t="morning.lead"></p>
+        <p class="body" data-t="morning.body"></p>
+      </div>
+      <div class="art-col art-morning">
+        <span class="art-slot art-sun" data-art="sun"></span>
+        <span class="art-slot art-kettle" data-art="kettle"></span>
+      </div>
+    </div>
+    <svg class="ink" data-ink="morning" aria-hidden="true"></svg>
+  </section>
+
+  <section class="chapter bar" id="bar" data-surface="day">
+    <div class="container split">
+      <div class="text">
+        <h2 class="tt-h" data-tt="bar.title"></h2>
+        <p class="lead" data-t="bar.lead"></p>
+        <div class="pack" id="pack"></div>
+      </div>
+      <div class="art-col art-bar">
+        <span class="art-slot art-path" data-art="coffeePath"></span>
+        <span class="art-slot art-espresso" data-art="espresso"></span>
+      </div>
+    </div>
+    <svg class="ink" data-ink="bar" aria-hidden="true"></svg>
+  </section>
+
+  <!-- The menu: pinned. The flavors pass one at a time; each has its note. -->
+  <section class="menu" id="menu" data-surface="day" aria-roledescription="carousel">
+    <div class="menu-inner">
+      <div class="container menu-head">
+        <h2 class="tt-h" data-tt="menu.title"></h2>
+        <p class="lead" data-t="menu.lead"></p>
+      </div>
+      <div class="menu-stage" id="menuStage">
+        <div class="menu-track" id="menuTrack" role="list">
+          <svg class="ink ink-track" aria-hidden="true"></svg>
+        </div>
+      </div>
+      <div class="menu-dots" id="menuDots" aria-hidden="true"></div>
+    </div>
+    <svg class="ink" data-ink="menu" aria-hidden="true"></svg>
+  </section>
+
+  <!-- Evening: the day goes down into the night of the glass. -->
+  <section class="chapter evening" id="evening" data-surface="night">
+    <div class="sky sky-dusk" aria-hidden="true"></div>
+    <div class="container split">
+      <div class="text">
+        <h2 class="tt-h" data-tt="evening.title"></h2>
+        <p class="lead" data-t="evening.lead"></p>
+        <p class="body" data-t="evening.body"></p>
+      </div>
+      <div class="art-col art-evening">
+        <span class="art-slot art-hat" data-art="hat"></span>
+      </div>
+    </div>
+    <svg class="ink" data-ink="evening" aria-hidden="true"></svg>
+  </section>
+
+  <section class="chapter branches" id="branches" data-surface="night">
+    <div class="container">
+      <div class="text narrow">
+        <h2 class="tt-h" data-tt="branches.title"></h2>
+        <p class="lead" data-t="branches.lead"></p>
+      </div>
+      <ol class="rows" id="branchRows"></ol>
+      <p class="small soft rows-hours" data-t="branches.hours"></p>
+    </div>
+    <svg class="ink" data-ink="branches" aria-hidden="true"></svg>
+  </section>
+
+  <section class="chapter order" id="order" data-surface="night">
+    <div class="container">
+      <div class="text narrow">
+        <h2 class="tt-h" data-tt="order.title"></h2>
+        <p class="lead" data-t="order.lead"></p>
+        <p><a class="btn btn-line" href="https://tada.ir" rel="noopener" data-t="order.cta">سفارش در tada.ir</a></p>
+      </div>
+      <div class="road" id="road" aria-hidden="true">
+        <span class="art-slot art-palm" data-art="palm"></span>
+        <span class="art-slot art-scooter" data-art="scooter"></span>
+      </div>
+    </div>
+    <svg class="ink" data-ink="order" aria-hidden="true"></svg>
+  </section>
+
+  <section class="chapter collab" id="collab" data-surface="night">
+    <div class="container">
+      <div class="text narrow">
+        <h2 class="tt-h" data-tt="collab.title"></h2>
+        <dl class="notes" id="collabItems"></dl>
+        <p><a class="btn btn-line" href="https://www.instagram.com/tada_lounge/" rel="noopener" data-t="collab.cta">پیام در اینستاگرام</a></p>
+      </div>
+    </div>
+    <svg class="ink" data-ink="collab" aria-hidden="true"></svg>
+  </section>
+
+</main>
+
+<!-- The ending: step back outside and see the whole glass. -->
+<footer class="glass" id="glass" data-surface="night">
+  <figure class="mural" id="mural">
+    <div class="mural-frame" id="muralFrame">
+      <img class="mural-img" id="muralImg" src="assets/art/mural.svg" alt="" decoding="async" loading="lazy" width="8022" height="5754">
+    </div>
+    <figcaption class="mural-caption" data-t="glass.caption">شیشه‌ی تادا، از بیرون</figcaption>
+  </figure>
+  <div class="container footer-row">
+    <ul class="footer-links" id="footerLinks"></ul>
+    <p class="small soft"><span id="year"></span> <span data-t="glass.rights">تادا لانژ</span></p>
+  </div>
+  <svg class="ink" data-ink="glass" aria-hidden="true"></svg>
+</footer>
+
+<!-- The Tada magic: the glowing head of the line, and its sparkles. -->
+<canvas class="magic-dust" id="magicDust" aria-hidden="true"></canvas>
+<div class="magic" id="magic" aria-hidden="true"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>window.gsap || document.write('<script src="assets/vendor/gsap.min.js"><\/script>')</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>window.ScrollTrigger || document.write('<script src="assets/vendor/ScrollTrigger.min.js"><\/script>')</script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>window.Lenis || document.write('<script src="assets/vendor/lenis.min.js"><\/script>')</script>
+<script src="js/letters-data.js?v=20261109203832"></script>
+<script src="js/letters.js?v=20261109203832"></script>
+<script src="js/art-data.js?v=20261109203832"></script>
+<script src="js/content.js?v=20261109203832"></script>
+<script src="js/sound.js?v=20261109203832"></script>
+<script src="js/loader.js?v=20261109203832"></script>
+<script src="js/main.js?v=20261109203832"></script>
+</body>
+</html>

@@ -19,6 +19,11 @@ export function safeEqualHex(a: string, b: string): boolean {
   return ab.length === bb.length && ab.length > 0 && timingSafeEqual(ab, bb);
 }
 
+/** Constant-time comparison of two strings (via their SHA-256, so lengths may differ). */
+export function safeEqualText(a: string, b: string): boolean {
+  return timingSafeEqual(createHash('sha256').update(a).digest(), createHash('sha256').update(b).digest());
+}
+
 export const randomDigits = (n: number) => Array.from({ length: n }, () => randomInt(0, 10)).join('');
 
 /** Great-circle distance in km. */

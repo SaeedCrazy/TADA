@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import type { NextConfig } from 'next';
 
 const API = process.env.API_INTERNAL_URL ?? 'http://localhost:4000';
@@ -21,6 +22,8 @@ const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   output: 'standalone',
+  // The monorepo root, so the standalone server includes the shared workspace package.
+  outputFileTracingRoot: resolve(process.cwd(), '../..'),
   transpilePackages: ['@tada/shared'],
   async rewrites() {
     return [

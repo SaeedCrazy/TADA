@@ -8,7 +8,7 @@ import {
 import type { AppContext } from '../../context.js';
 import { Prisma, type Db } from '../../db.js';
 import { AppError, badRequest, conflict, forbidden, notFound, unauthorized } from '../../lib/errors.js';
-import { randomToken } from '../../lib/util.js';
+import { randomToken, safeEqualText } from '../../lib/util.js';
 import type { AuthCustomer, AuthStaff } from '../../plugins/auth.js';
 import { assertBranchAccess } from '../../plugins/auth.js';
 import { priceCart } from './pricing.js';
@@ -409,7 +409,7 @@ export async function getOrderForViewer(db: Db, id: string, token: string | unde
   const order = await db.order.findUnique({ where: { id }, include: orderInclude });
   if (!order) throw notFound('order_not_found');
   const ownsIt = customer && order.customerId === customer.id;
-  const hasToken = token && token.length >= 16 && token === order.accessToken;
+  const hasToken = Boolean(token && token.length >= 16 && safeEqualText(token, order.accessToken));
   if (!ownsIt && !hasToken) throw notFound('order_not_found');
   return order;
 }

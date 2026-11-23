@@ -238,6 +238,14 @@ describe('online payment', () => {
     await env.db.branchProduct.update({ where: { branchId_productId: { branchId: fx.branch.id, productId: fx.cookie.id } }, data: { stock: null } });
   });
 
+  it('escapes the callback on the mock gateway page', async () => {
+    const cb = encodeURIComponent('http://localhost:3000/api/payments/callback?o=1"><script>alert(1)</script>');
+    const page = await new Client(env.app).get(`/api/payments/mock/MOCKabcdefgh12?cb=${cb}`);
+    expect(page.status).toBe(200);
+    expect(page.raw.body).not.toContain('<script>');
+    expect(page.raw.body).toContain('&quot;&gt;&lt;script&gt;');
+  });
+
   it('never trusts the mock gateway page with a foreign callback', async () => {
     const r = await new Client(env.app).get('/api/payments/mock/MOCKabcdefgh12/approve?cb=https%3A%2F%2Fevil.example%2Fx');
     expect(r.status).toBe(404);

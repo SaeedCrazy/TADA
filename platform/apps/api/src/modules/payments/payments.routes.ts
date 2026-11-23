@@ -6,6 +6,8 @@ import { parse } from '../../lib/util.js';
 import { completePayment, trackingUrl } from '../orders/orders.service.js';
 import { MockGateway } from './drivers.js';
 
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+
 const callbackQuery = z.object({
   o: z.uuid(),
   Authority: z.string().min(4).max(80),
@@ -55,8 +57,8 @@ a{display:block;padding:14px;border-radius:12px;text-decoration:none;margin-top:
 .ok{background:#662482;color:#fff}.no{border:1px solid #926D8F;color:#F6F0F8}</style></head>
 <body><main><h1>درگاه پرداخت آزمایشی</h1><p>فقط برای محیط توسعه؛ پولی جابه‌جا نمی‌شود.</p>
 <b>${amount !== undefined ? formatToman(amount, 'fa') : ''}</b>
-<a class="ok" id="approve" href="/api/payments/mock/${authority}/approve?${q}">پرداخت موفق</a>
-<a class="no" id="cancel" href="${cb}&Authority=${authority}&Status=NOK">انصراف</a></main></body></html>`;
+<a class="ok" id="approve" href="/api/payments/mock/${esc(authority)}/approve?${esc(q.toString())}">پرداخت موفق</a>
+<a class="no" id="cancel" href="${esc(`${cb}&Authority=${authority}&Status=NOK`)}">انصراف</a></main></body></html>`;
     reply
       .header('content-security-policy', "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; form-action 'self'")
       .type('text/html; charset=utf-8');

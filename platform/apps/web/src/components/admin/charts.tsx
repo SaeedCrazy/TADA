@@ -130,6 +130,7 @@ export function ColumnChart({ data, format, axisFormat, title, height = 220, lab
 export function BarList({ data, format, title }: { data: Datum[]; format: (v: number) => string; title: string }) {
   const [hover, setHover] = useState<string | null>(null);
   const max = Math.max(1, ...data.map((d) => d.value));
+  if (!data.length) return <p className="muted tiny">داده‌ای نیست.</p>;
   return (
     <div role="list" aria-label={title} className="stack" style={{ gap: 10 }}>
       {data.map((d) => (
@@ -148,7 +149,6 @@ export function BarList({ data, format, title }: { data: Datum[]; format: (v: nu
           </span>
         </div>
       ))}
-      {!data.length ? <p className="muted tiny">داده‌ای نیست.</p> : null}
     </div>
   );
 }

@@ -112,8 +112,8 @@ export function Assistant({ locale }: { locale: Locale }) {
         <div><h1 style={{ fontSize: 28 }}>{t.assistant.title}</h1><p className="muted">{t.assistant.lead}</p></div>
       </div>
       <div className="row" role="tablist" aria-label={t.assistant.title}>
-        <button type="button" role="tab" className="chip" aria-selected={tab === 'quiz'} aria-pressed={tab === 'quiz'} onClick={() => setTab('quiz')}>{t.assistant.quiz}</button>
-        <button type="button" role="tab" className="chip" aria-selected={tab === 'chat'} aria-pressed={tab === 'chat'} onClick={() => setTab('chat')}>{t.assistant.chat}</button>
+        <button type="button" role="tab" className="chip" aria-selected={tab === 'quiz'} onClick={() => setTab('quiz')}>{t.assistant.quiz}</button>
+        <button type="button" role="tab" className="chip" aria-selected={tab === 'chat'} onClick={() => setTab('chat')}>{t.assistant.chat}</button>
       </div>
       {err ? <p className="alert bad">{err}</p> : null}
 

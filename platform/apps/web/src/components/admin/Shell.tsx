@@ -54,7 +54,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   return (
     <StaffCtx.Provider value={{ me, branches, reloadBranches }}>
       <div className="adm">
-        <aside className={`adm-side${open ? ' open' : ''}`} aria-label="منوی پنل">
+        <nav className={`adm-side${open ? ' open' : ''}`} aria-label="منوی پنل">
           <Link href="/admin" className="brand"><img src="/brand/tada-wordmark-fa_white.svg" alt="تادا" /><b>پنل</b></Link>
           {NAV.filter((n) => n.roles.includes(me.role)).map((n) => (
             <Link key={n.href} href={n.href} className="nav" aria-current={(n.href === '/admin' ? path === '/admin' : path.startsWith(n.href)) ? 'page' : undefined}>
@@ -65,7 +65,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <span><b style={{ color: 'var(--cream)' }}>{me.name}</b> · {STAFF_ROLE_LABELS[me.role].fa}</span>
             <button type="button" className="btn ghost sm" style={{ color: 'var(--cream)', borderColor: 'rgba(195,173,207,.4)' }} onClick={async () => { await api('/api/staff/logout', { method: 'POST', json: {} }); router.replace('/admin/login'); }}>خروج</button>
           </div>
-        </aside>
+        </nav>
         {open ? <div className="scrim" onClick={() => setOpen(false)} aria-hidden style={{ zIndex: 69 }} /> : null}
         <div className="adm-main">
           <button type="button" className="btn ghost sm adm-burger no-print" onClick={() => setOpen(true)} aria-label="باز کردن منو" style={{ marginBottom: 12 }}>☰ منو</button>

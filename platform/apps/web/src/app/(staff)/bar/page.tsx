@@ -172,7 +172,7 @@ export default function BarScreen() {
                   </article>
                 );
               })}
-              {!list.length ? <p style={{ color: 'var(--mauve)', textAlign: 'center', padding: 20 }}>خالی</p> : null}
+              {!list.length ? <p style={{ color: 'var(--haze)', textAlign: 'center', padding: 20 }}>خالی</p> : null}
             </section>
           );
         })}

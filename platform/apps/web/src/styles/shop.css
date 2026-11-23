@@ -58,7 +58,7 @@
 .pcard .price { font-weight: 800; color: var(--ink); font-size: 14.5px; }
 .pcard .add { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--tada); color: #fff; font-size: 22px; line-height: 1; display: grid; place-items: center; cursor: pointer; flex: none; }
 .pcard .add:hover { background: var(--tada-ink); }
-.pcard.off { opacity: .6; }
+.pcard.off .media { opacity: .45; filter: grayscale(.6); }
 .pcard .sold { position: absolute; top: 14px; inset-inline-start: 50%; transform: translateX(50%); }
 [dir='ltr'] .pcard .sold { transform: translateX(-50%); }
 .pcard .feat { position: absolute; top: 16px; inset-inline-end: 16px; color: var(--tada); }

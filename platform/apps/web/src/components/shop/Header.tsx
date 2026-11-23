@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { Locale } from '@tada/shared';
+import { toPersianDigits, type Locale } from '@tada/shared';
 import { cart, useCart } from '@/lib/cart';
 import { dict, href } from '@/lib/i18n';
 
@@ -32,9 +32,9 @@ export function ShopHeader({ locale }: { locale: Locale }) {
         <Link className="tool" href={href(locale, '/shop/account')} aria-label={t.nav.account}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></svg>
         </Link>
-        <Link className="tool" href={href(locale, '/shop/cart')} aria-label={`${t.nav.cart} (${n})`}>
+        <Link className="tool" href={href(locale, '/shop/cart')} aria-label={`${t.nav.cart} (${locale === 'fa' ? toPersianDigits(n) : n})`}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8Z" /><path d="M9 8V6a3 3 0 0 1 6 0v2" /></svg>
-          {n > 0 ? <span className="count num" suppressHydrationWarning>{n}</span> : null}
+          {n > 0 ? <span className="count num" suppressHydrationWarning>{locale === 'fa' ? toPersianDigits(n) : n}</span> : null}
         </Link>
       </div>
     </header>

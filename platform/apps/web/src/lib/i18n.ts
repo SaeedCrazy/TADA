@@ -1,5 +1,5 @@
 // Storefront copy in both languages. Persian is written natively, short and warm, in the Tada voice.
-import type { Locale } from '@tada/shared';
+import { toPersianDigits as P, type Locale } from '@tada/shared';
 
 export const LOCALES = ['fa', 'en'] as const;
 export const isLocale = (v: string): v is Locale => (LOCALES as readonly string[]).includes(v);
@@ -17,13 +17,13 @@ const fa = {
     pick: 'انتخاب شعبه', change: 'تغییر شعبه', open: (t: string) => `باز است تا ${t}`, closedUntil: (t: string, tomorrow: boolean) => `بسته است؛ ${tomorrow ? 'فردا ' : ''}ساعت ${t} باز می‌کنیم`,
     paused: 'سفارش آنلاین موقتاً متوقف است', all: 'همه‌ی شعبه‌ها', hours: 'ساعت کاری', chooseHint: 'منو و موجودی بر اساس شعبه نشان داده می‌شود.',
   },
-  table: { at: (n: number, b: string) => `میز ${n} · شعبه‌ی ${b}`, leave: 'سفارش از میز نیست؟' },
+  table: { at: (n: number, b: string) => `میز ${P(n)} · شعبه‌ی ${b}`, leave: 'سفارش از میز نیست؟' },
   menu: { all: 'همه', featured: 'محبوب‌های تادا', soldOut: 'تمام شد', add: 'افزودن', from: 'از', empty: 'چیزی پیدا نشد.', search: 'جست‌وجو در منو' },
-  product: { options: 'انتخاب‌ها', required: 'اجباری', optional: 'اختیاری', pickUpTo: (n: number) => `تا ${n} مورد`, note: 'توضیح برای بار', notePh: 'مثلاً کم‌یخ', qty: 'تعداد', addToCart: 'افزودن به سبد', allergens: 'حساسیت‌زاها', taste: 'ذائقه', back: 'بازگشت به منو', added: 'به سبد اضافه شد' },
+  product: { options: 'انتخاب‌ها', required: 'اجباری', optional: 'اختیاری', pickUpTo: (n: number) => `تا ${P(n)} مورد`, note: 'توضیح برای بار', notePh: 'مثلاً کم‌یخ', qty: 'تعداد', addToCart: 'افزودن به سبد', allergens: 'حساسیت‌زاها', taste: 'ذائقه', back: 'بازگشت به منو', added: 'به سبد اضافه شد' },
   tasteScale: { sweetness: 'شیرینی', bitterness: 'تلخی', acidity: 'ترشی', body: 'غلظت', caffeine: 'کافئین' },
   cart: {
     title: 'سبد شما', empty: 'سبد خالی است. یک نُت از منو انتخاب کنید.', toMenu: 'رفتن به منو', checkout: 'ادامه‌ی خرید', subtotal: 'جمع اقلام',
-    remove: 'حذف', items: (n: number) => `${n} قلم`, discount: 'تخفیف', delivery: 'هزینه‌ی ارسال', total: 'مبلغ نهایی', view: 'دیدن سبد',
+    remove: 'حذف', items: (n: number) => `${P(n)} قلم`, discount: 'تخفیف', delivery: 'هزینه‌ی ارسال', total: 'مبلغ نهایی', view: 'دیدن سبد',
   },
   checkout: {
     title: 'تکمیل سفارش', how: 'چطور سفارش می‌دهید؟', DINE_IN: 'سر میز', PICKUP: 'تحویل در شعبه', DELIVERY: 'دلیوری',
@@ -36,11 +36,11 @@ const fa = {
   },
   login: {
     title: 'ورود با شماره‌ی موبایل', phone: 'شماره‌ی موبایل', phonePh: '۰۹۱۲۱۲۳۴۵۶۷', send: 'ارسال کد', code: 'کد تأیید', codeSent: (p: string) => `کد ۵ رقمی به ${p} پیامک شد.`,
-    verify: 'تأیید و ورود', resend: 'ارسال دوباره', resendIn: (s: number) => `ارسال دوباره تا ${s} ثانیه`, change: 'تغییر شماره', name: 'نام (اختیاری)', logout: 'خروج',
+    verify: 'تأیید و ورود', resend: 'ارسال دوباره', resendIn: (s: number) => `ارسال دوباره تا ${P(s)} ثانیه`, change: 'تغییر شماره', name: 'نام (اختیاری)', logout: 'خروج',
   },
   order: {
-    title: (n: number) => `سفارش #${n}`, status: 'وضعیت', paidOk: 'پرداخت موفق بود. سفارش شما به بار رسید.', paidFail: 'پرداخت انجام نشد. می‌توانید دوباره امتحان کنید.',
-    retryPay: 'پرداخت دوباره', items: 'اقلام', placedAt: 'زمان ثبت', table: (n: number) => `میز ${n}`, payment: 'پرداخت', live: 'این صفحه خودکار به‌روز می‌شود.',
+    title: (n: number) => `سفارش #${P(n)}`, status: 'وضعیت', paidOk: 'پرداخت موفق بود. سفارش شما به بار رسید.', paidFail: 'پرداخت انجام نشد. می‌توانید دوباره امتحان کنید.',
+    retryPay: 'پرداخت دوباره', items: 'اقلام', placedAt: 'زمان ثبت', table: (n: number) => `میز ${P(n)}`, payment: 'پرداخت', live: 'این صفحه خودکار به‌روز می‌شود.',
     expired: 'مهلت پرداخت تمام شد و سفارش لغو شد.', thanks: 'نوش جان!', track: 'پیگیری سفارش',
   },
   account: {

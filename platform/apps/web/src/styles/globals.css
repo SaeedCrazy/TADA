@@ -11,6 +11,7 @@
   --tada: #662482;
   --tada-ink: #57196F;
   --mauve: #926D8F;
+  --mauve-ink: #7A5677; /* mauve for small text: 6.2:1 on white */
   --lilac: #EFE9F2;
   --cream: #F6F0F8;
   --haze: #C3ADCF;
@@ -123,7 +124,7 @@ p { margin: 0; }
   font-weight: 700; font-size: 14px; color: var(--soft); cursor: pointer; white-space: nowrap;
   transition: all .2s var(--ease); text-decoration: none;
 }
-.chip[aria-pressed='true'], .chip.on { background: var(--tada); border-color: var(--tada); color: #fff; }
+.chip[aria-pressed='true'], .chip[aria-selected='true'], .chip.on { background: var(--tada); border-color: var(--tada); color: #fff; }
 .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; background: var(--lilac); color: var(--tada); white-space: nowrap; }
 .badge.ok { background: var(--ok-bg); color: var(--ok); }
 .badge.warn { background: var(--warn-bg); color: var(--warn); }

@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { formatToman, type Locale } from '@tada/shared';
+import { formatToman, toPersianDigits, type Locale } from '@tada/shared';
 import type { Branch, Menu, Product } from '@/lib/types';
 import { api } from '@/lib/api';
 import { cart, useCart } from '@/lib/cart';
@@ -117,7 +117,7 @@ export function MenuView({ locale, initial, branches }: { locale: Locale; initia
 
       {count > 0 ? (
         <Link className="cartbar" href={href(locale, '/shop/cart')}>
-          <span className="n num" suppressHydrationWarning>{count}</span>
+          <span className="n num" suppressHydrationWarning>{locale === 'fa' ? toPersianDigits(count) : count}</span>
           <span suppressHydrationWarning>{formatToman(cart.estimate(state), locale)}</span>
           <span className="btn sm">{t.cart.view}</span>
         </Link>

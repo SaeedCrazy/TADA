@@ -11,3 +11,5 @@ playwright-report/
 apps/api/src/generated/
 apps/web/next-env.d.ts
 apps/web/.env.local
+test-results/
+playwright-report/

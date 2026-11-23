@@ -1,0 +1,508 @@
+// Tada platform database. Money is integer rials (BigInt-free: Int holds up to ~2.1e9 rial = 214M toman per row,
+// which is far above any single café order; report totals are summed in SQL as bigint).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OrderType {
+  DINE_IN
+  PICKUP
+  DELIVERY
+}
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PLACED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  ONLINE
+  COUNTER
+  ON_DELIVERY
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum StaffRole {
+  OWNER
+  MANAGER
+  BARISTA
+}
+
+enum ProductKind {
+  DRINK
+  FOOD
+  PACKAGED
+}
+
+enum Temperature {
+  HOT
+  ICED
+  BOTH
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+enum TxStatus {
+  INIT
+  PENDING
+  PAID
+  FAILED
+}
+
+enum JobStatus {
+  PENDING
+  DONE
+  FAILED
+}
+
+// ---------------------------------------------------------------- branches
+
+model Branch {
+  id              String   @id @default(uuid()) @db.Uuid
+  slug            String   @unique
+  nameFa          String
+  nameEn          String
+  addressFa       String
+  addressEn       String
+  phone           String?
+  lat             Float?
+  lng             Float?
+  hours           Json // [["09:00","16:00"],["17:00","23:00"]]
+  timezone        String   @default("Asia/Tehran")
+  isActive        Boolean  @default(true)
+  acceptsOrders   Boolean  @default(true)
+  deliveryEnabled Boolean  @default(false)
+  // Delivery pricing: fee = base + perKm * ceil(distance), free above freeAbove (0 = never).
+  deliveryBaseFee Int      @default(300000)
+  deliveryPerKm   Int      @default(100000)
+  deliveryMaxKm   Float    @default(5)
+  deliveryMinOrder Int     @default(0)
+  deliveryFreeAbove Int    @default(0)
+  sort            Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tables     DiningTable[]
+  products   BranchProduct[]
+  orders     Order[]
+  staff      Staff[]
+
+  @@index([isActive, sort])
+}
+
+model DiningTable {
+  id        String   @id @default(uuid()) @db.Uuid
+  branchId  String   @db.Uuid
+  number    Int
+  label     String?
+  token     String   @unique // random, printed in the QR code
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  branch Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([branchId, number])
+}
+
+// ---------------------------------------------------------------- catalog
+
+model Category {
+  id        String    @id @default(uuid()) @db.Uuid
+  slug      String    @unique
+  nameFa    String
+  nameEn    String
+  art       String? // line-art key used for the category icon
+  sort      Int       @default(0)
+  isActive  Boolean   @default(true)
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Product {
+  id          String      @id @default(uuid()) @db.Uuid
+  slug        String      @unique
+  categoryId  String      @db.Uuid
+  kind        ProductKind @default(DRINK)
+  nameFa      String
+  nameEn      String
+  descFa      String      @default("")
+  descEn      String      @default("")
+  art         String? // line-art key (glass, cup, croissant...) when there is no photo
+  imageUrl    String?
+  basePrice   Int // rial
+  isActive    Boolean     @default(true)
+  isFeatured  Boolean     @default(false)
+  sort        Int         @default(0)
+  allergens   String[]    @default([])
+  // Taste attributes (0..5) for the assistant. Null for products that are not tasted (packaged goods).
+  sweetness   Int?
+  bitterness  Int?
+  acidity     Int?
+  body        Int?
+  caffeine    Int?
+  milk        Boolean?
+  temperature Temperature?
+  notes       String[]    @default([])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  category     Category        @relation(fields: [categoryId], references: [id])
+  optionGroups OptionGroup[]
+  branches     BranchProduct[]
+  orderItems   OrderItem[]
+
+  @@index([categoryId, isActive, sort])
+}
+
+model OptionGroup {
+  id        String   @id @default(uuid()) @db.Uuid
+  productId String   @db.Uuid
+  nameFa    String
+  nameEn    String
+  minSelect Int      @default(0)
+  maxSelect Int      @default(1)
+  sort      Int      @default(0)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  options   Option[]
+}
+
+model Option {
+  id         String      @id @default(uuid()) @db.Uuid
+  groupId    String      @db.Uuid
+  nameFa     String
+  nameEn     String
+  priceDelta Int         @default(0) // rial
+  isDefault  Boolean     @default(false)
+  isActive   Boolean     @default(true)
+  sort       Int         @default(0)
+  group      OptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+/// Per-branch availability, stock and price override.
+model BranchProduct {
+  branchId      String   @db.Uuid
+  productId     String   @db.Uuid
+  isAvailable   Boolean  @default(true)
+  stock         Int? // null = not tracked
+  priceOverride Int?
+  updatedAt     DateTime @updatedAt
+
+  branch  Branch  @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([branchId, productId])
+}
+
+// ---------------------------------------------------------------- people
+
+model Customer {
+  id           String   @id @default(uuid()) @db.Uuid
+  phone        String   @unique
+  name         String?
+  locale       String   @default("fa")
+  tasteConsent Boolean  @default(false)
+  tasteProfile Json?
+  isBlocked    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  addresses     Address[]
+  orders        Order[]
+  sessions      Session[]
+  conversations Conversation[]
+  redemptions   DiscountRedemption[]
+}
+
+model Address {
+  id         String   @id @default(uuid()) @db.Uuid
+  customerId String   @db.Uuid
+  title      String
+  line       String
+  lat        Float
+  lng        Float
+  createdAt  DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model Staff {
+  id           String    @id @default(uuid()) @db.Uuid
+  username     String    @unique
+  name         String
+  passwordHash String
+  role         StaffRole
+  branchId     String?   @db.Uuid // managers and baristas belong to one branch
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  branch    Branch?    @relation(fields: [branchId], references: [id])
+  sessions  Session[]
+  auditLogs AuditLog[]
+  events    OrderEvent[]
+}
+
+/// Opaque session tokens: only the SHA-256 of the token is stored.
+model Session {
+  id         String    @id // sha256(token) hex
+  customerId String?   @db.Uuid
+  staffId    String?   @db.Uuid
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  ip         String?
+  userAgent  String?
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  staff    Staff?    @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+}
+
+model OtpCode {
+  id         String    @id @default(uuid()) @db.Uuid
+  phone      String
+  codeHash   String
+  attempts   Int       @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  ip         String?
+  createdAt  DateTime  @default(now())
+
+  @@index([phone, createdAt])
+}
+
+// ---------------------------------------------------------------- discounts
+
+model DiscountCode {
+  id               String       @id @default(uuid()) @db.Uuid
+  code             String       @unique
+  type             DiscountType
+  value            Int // percent (1..100) or rial
+  maxDiscount      Int? // cap for percent codes, rial
+  minSubtotal      Int          @default(0)
+  startsAt         DateTime?
+  endsAt           DateTime?
+  usageLimit       Int?
+  perCustomerLimit Int?
+  usedCount        Int          @default(0)
+  isActive         Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+
+  orders      Order[]
+  redemptions DiscountRedemption[]
+}
+
+model DiscountRedemption {
+  id         String       @id @default(uuid()) @db.Uuid
+  codeId     String       @db.Uuid
+  customerId String?      @db.Uuid
+  orderId    String       @unique @db.Uuid
+  createdAt  DateTime     @default(now())
+  code       DiscountCode @relation(fields: [codeId], references: [id])
+  customer   Customer?    @relation(fields: [customerId], references: [id])
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------- orders
+
+model Order {
+  id             String        @id @default(uuid()) @db.Uuid
+  number         Int           @unique @default(autoincrement())
+  accessToken    String        @unique // lets a guest follow their order
+  branchId       String        @db.Uuid
+  customerId     String?       @db.Uuid
+  tableId        String?       @db.Uuid
+  type           OrderType
+  status         OrderStatus
+  paymentMethod  PaymentMethod
+  paymentStatus  PaymentStatus @default(UNPAID)
+  subtotal       Int
+  discountTotal  Int           @default(0)
+  deliveryFee    Int           @default(0)
+  total          Int
+  discountCodeId String?       @db.Uuid
+  customerName   String
+  customerPhone  String?
+  addressText    String?
+  lat            Float?
+  lng            Float?
+  distanceKm     Float?
+  note           String?
+  locale         String        @default("fa")
+  idempotencyKey String        @unique
+  paidAt         DateTime?
+  completedAt    DateTime?
+  cancelledAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  branch       Branch              @relation(fields: [branchId], references: [id])
+  customer     Customer?           @relation(fields: [customerId], references: [id])
+  table        DiningTable?        @relation(fields: [tableId], references: [id])
+  discountCode DiscountCode?       @relation(fields: [discountCodeId], references: [id])
+  items        OrderItem[]
+  payments     Payment[]
+  events       OrderEvent[]
+  accounting   AccountingJob[]
+  redemption   DiscountRedemption?
+
+  @@index([branchId, status, createdAt])
+  @@index([customerId, createdAt])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(uuid()) @db.Uuid
+  orderId   String  @db.Uuid
+  productId String  @db.Uuid
+  nameFa    String
+  nameEn    String
+  unitPrice Int // base + options, rial
+  quantity  Int
+  options   Json // [{id,nameFa,nameEn,priceDelta}]
+  note      String?
+  lineTotal Int
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model OrderEvent {
+  id        String      @id @default(uuid()) @db.Uuid
+  orderId   String      @db.Uuid
+  status    OrderStatus
+  note      String?
+  staffId   String?     @db.Uuid
+  createdAt DateTime    @default(now())
+
+  order Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  staff Staff? @relation(fields: [staffId], references: [id])
+
+  @@index([orderId, createdAt])
+}
+
+model Payment {
+  id         String    @id @default(uuid()) @db.Uuid
+  orderId    String    @db.Uuid
+  provider   String
+  amount     Int // rial
+  status     TxStatus  @default(INIT)
+  authority  String?   @unique
+  refId      String?
+  cardPan    String?
+  error      String?
+  raw        Json?
+  createdAt  DateTime  @default(now())
+  verifiedAt DateTime?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+}
+
+// ---------------------------------------------------------------- integrations
+
+/// Outbox for the accounting system: one job per paid order, retried with backoff.
+model AccountingJob {
+  id            String    @id @default(uuid()) @db.Uuid
+  orderId       String    @unique @db.Uuid
+  driver        String
+  status        JobStatus @default(PENDING)
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  lastError     String?
+  externalId    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+}
+
+model SmsLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  phone     String
+  template  String
+  status    String
+  error     String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  staffId   String?  @db.Uuid
+  action    String
+  entity    String
+  entityId  String?
+  data      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  staff Staff? @relation(fields: [staffId], references: [id])
+
+  @@index([createdAt])
+  @@index([entity, entityId])
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------- assistant
+
+model Conversation {
+  id         String    @id @default(uuid()) @db.Uuid
+  customerId String?   @db.Uuid
+  branchId   String?   @db.Uuid
+  clientKey  String // random key held by the browser for guests
+  locale     String    @default("fa")
+  profile    Json?
+  mode       String    @default("guided") // guided | llm
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  @@index([createdAt])
+}
+
+model Message {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  role           String // user | assistant | tool
+  content        String
+  data           Json? // recommendations, proposed cart, tool calls
+  createdAt      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}

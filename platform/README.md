@@ -66,7 +66,15 @@ SMS_DRIVER=console
 
 ## راه‌اندازی روی سرور
 
-خلاصه: `cp .env.example .env`، پر کردن مقادیر، `./deploy/sync-site.sh`، `docker compose up -d --build`، سپس `docker compose exec api node dist/seed.js`. جزئیات در [docs/DEPLOY.md](docs/DEPLOY.md).
+با یک دستور (Ubuntu یا Debian، با root):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SaeedCrazy/TADA/ccr-6da8ed3f-1rtojo/platform/deploy/install.sh -o install.sh
+bash install.sh                                            # نسخه‌ی نمایشی روی IP سرور
+bash install.sh --domain tada.ir --email you@example.com   # نسخه‌ی واقعی با HTTPS
+```
+
+اجرای دوباره = به‌روزرسانی. جزئیات و نصب دستی در [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## تصمیم‌ها و چیزهایی که باید بدانید
 

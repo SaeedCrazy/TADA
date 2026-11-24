@@ -120,9 +120,16 @@ describe('configuration', () => {
     expect(() => loadConfig({ ...base, NODE_ENV: 'production' })).toThrow('mock payments are disabled');
     expect(() => loadConfig({ ...base, NODE_ENV: 'production', PAYMENT_DRIVER: 'zarinpal', ZARINPAL_MERCHANT_ID: 'm', SESSION_SECRET: 'dev-only-' + 'x'.repeat(40) })).toThrow('real secret');
     expect(() => loadConfig({ ...base, NODE_ENV: 'production', PAYMENT_DRIVER: 'zarinpal', ZARINPAL_MERCHANT_ID: 'm', PUBLIC_WEB_URL: 'http://tada.ir' })).toThrow('https');
+    expect(() => loadConfig({ ...base, NODE_ENV: 'production', PAYMENT_DRIVER: 'zarinpal', ZARINPAL_MERCHANT_ID: 'm' })).toThrow('console SMS');
+  });
+  it('allows a clearly marked demo over http with test payments and console SMS', () => {
+    const c = loadConfig({ ...base, NODE_ENV: 'production', DEMO_MODE: 'true', PUBLIC_WEB_URL: 'http://203.0.113.7', COOKIE_SECURE: 'false' });
+    expect(c.PAYMENT_DRIVER).toBe('mock');
+    expect(c.cookieSecure).toBe(false);
+    expect(c.otpTestCode).toBeNull();
   });
   it('ignores the test OTP code and rate-limit switch in production', () => {
-    const c = loadConfig({ ...base, NODE_ENV: 'production', PAYMENT_DRIVER: 'zarinpal', ZARINPAL_MERCHANT_ID: 'm', OTP_TEST_CODE: '11111', RATE_LIMIT: 'false' });
+    const c = loadConfig({ ...base, NODE_ENV: 'production', PAYMENT_DRIVER: 'zarinpal', ZARINPAL_MERCHANT_ID: 'm', SMS_DRIVER: 'kavenegar', KAVENEGAR_API_KEY: 'k', OTP_TEST_CODE: '11111', RATE_LIMIT: 'false' });
     expect(c.otpTestCode).toBeNull();
     expect(c.RATE_LIMIT).toBe(true);
     expect(c.cookieSecure).toBe(true);

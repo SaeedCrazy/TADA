@@ -16,3 +16,4 @@ playwright-report/
 deploy/site/
 deploy/certs/
 backups/
+.seeded

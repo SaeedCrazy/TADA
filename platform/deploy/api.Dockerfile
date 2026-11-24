@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1.7
 # Tada API: Fastify + Prisma. Build context: the platform/ folder.
 FROM node:22-bookworm-slim AS base
-ENV NEXT_TELEMETRY_DISABLED=1
+# Servers that cannot reach registry.npmjs.org can point this at an npm mirror.
+ARG NPM_REGISTRY=https://registry.npmjs.org/
+ENV NEXT_TELEMETRY_DISABLED=1 npm_config_registry=$NPM_REGISTRY
 RUN --mount=type=secret,id=ca,required=false \
     if [ -f /run/secrets/ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/ca; fi; \
     npm install -g pnpm@10.28.0 --no-fund --no-audit

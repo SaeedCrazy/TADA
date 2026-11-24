@@ -49,10 +49,15 @@ const schema = z
     WORKERS: bool.default(true),
     /** Only for automated tests that hammer endpoints from one address. Always on in production. */
     RATE_LIMIT: bool.default(true),
+    /**
+     * A public demo: allows test payments, console SMS and plain http in production.
+     * Never real money; turn off before taking real orders.
+     */
+    DEMO_MODE: bool.default(false),
   })
   .superRefine((c, ctx) => {
     if (c.NODE_ENV === 'production') {
-      if (c.PAYMENT_DRIVER === 'mock' && !c.ALLOW_MOCK_PAYMENTS) {
+      if (c.PAYMENT_DRIVER === 'mock' && !c.ALLOW_MOCK_PAYMENTS && !c.DEMO_MODE) {
         ctx.addIssue({ code: 'custom', path: ['PAYMENT_DRIVER'], message: 'mock payments are disabled in production' });
       }
       if (c.PAYMENT_DRIVER === 'zarinpal' && !c.ZARINPAL_MERCHANT_ID) {
@@ -61,7 +66,10 @@ const schema = z
       if (c.SESSION_SECRET.includes('dev-only') || c.SESSION_SECRET.includes('change-me')) {
         ctx.addIssue({ code: 'custom', path: ['SESSION_SECRET'], message: 'set a real secret in production' });
       }
-      if (!c.PUBLIC_WEB_URL.startsWith('https://')) {
+      if (c.SMS_DRIVER === 'console' && !c.DEMO_MODE) {
+        ctx.addIssue({ code: 'custom', path: ['SMS_DRIVER'], message: 'console SMS writes login codes to the log; use kavenegar in production' });
+      }
+      if (!c.PUBLIC_WEB_URL.startsWith('https://') && !c.DEMO_MODE) {
         ctx.addIssue({ code: 'custom', path: ['PUBLIC_WEB_URL'], message: 'must be https in production' });
       }
     }

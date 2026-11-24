@@ -15,7 +15,11 @@ services:
 
   api:
     image: tada-api:latest
-    build: { context: ., dockerfile: deploy/api.Dockerfile }
+    build:
+      context: .
+      dockerfile: deploy/api.Dockerfile
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}
     env_file: .env
     environment:
       DATABASE_URL: postgresql://tada:${POSTGRES_PASSWORD}@db:5432/tada?schema=public
@@ -32,6 +36,7 @@ services:
       dockerfile: deploy/web.Dockerfile
       args:
         NEXT_PUBLIC_SITE_URL: ${PUBLIC_WEB_URL:?set PUBLIC_WEB_URL in .env}
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}
     environment:
       API_INTERNAL_URL: http://api:4000
     depends_on: [api]
